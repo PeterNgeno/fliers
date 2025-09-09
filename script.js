@@ -16,24 +16,29 @@ let resizeHandleSize = 15;
 // ---------------- TEMPLATE CONFIG ----------------
 const templateConfigs = {
   "images/template1.jpg": [
-    { key: "region", x: 600, y: 70, font: "bold 35px Arial", color: "white" },
-    { key: "title", x: 600, y: 140, font: "bold 50px Arial", color: "yellow" },
-    { key: "invitation", x: 600, y: 190, font: "25px Arial", color: "white" },
-    { key: "event", x: 750, y: 300, font: "bold 90px Impact", color: "white" },
-    { key: "eventKind", x: 900, y: 380, font: "italic 60px Brush Script MT", color: "red" },
-    { key: "location", x: 200, y: 600, font: "25px Arial", color: "blue" },
-    { key: "date", x: 550, y: 600, font: "25px Arial", color: "blue" },
-    { key: "year", x: 750, y: 600, font: "25px Arial", color: "blue" },
-    { key: "time", x: 950, y: 600, font: "25px Arial", color: "blue" },
-    { key: "others", x: 200, y: 650, font: "25px Arial", color: "red" },
-    { key: "speaker", x: 600, y: 650, font: "25px Arial", color: "navy" },
-    { key: "contacts", x: 1000, y: 650, font: "25px Arial", color: "navy" }
+    // --- HEADER ---
+    { key: "region", x: 1100, y: 60, font: "bold 28px Arial", color: "white" },
+    { key: "altar", x: 1100, y: 110, font: "bold 40px Arial", color: "yellow" },
+    { key: "invitation", x: 1100, y: 150, font: "20px Arial", color: "white" },
+
+    // --- MAIN EVENT ---
+    { key: "event", x: 1100, y: 300, font: "bold 100px Impact", color: "white" },
+    { key: "eventKind", x: 1250, y: 380, font: "italic 60px Brush Script MT", color: "red" },
+
+    // --- FOOTER (three sections) ---
+    { key: "locationLabel", x: 200, y: 600, font: "bold 25px Arial", color: "red" },
+    { key: "location", x: 200, y: 640, font: "25px Arial", color: "blue" },
+
+    { key: "date", x: 700, y: 600, font: "bold 25px Arial", color: "navy" },
+    { key: "time", x: 700, y: 640, font: "25px Arial", color: "navy" },
+
+    { key: "contactLabel", x: 1150, y: 600, font: "bold 25px Arial", color: "red" },
+    { key: "contacts", x: 1150, y: 640, font: "25px Arial", color: "navy" }
   ]
-};
+];
 
 // ---------------- DRAW POSTER ----------------
 function drawPoster() {
-  // Always redraw background first
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   if (templateImg.complete) {
     ctx.drawImage(templateImg, 0, 0, canvas.width, canvas.height);
@@ -43,16 +48,15 @@ function drawPoster() {
   templateConfigs["images/template1.jpg"].forEach(conf => {
     const input = document.getElementById(`${conf.key}Input`);
     if (input && input.value.trim() !== "") {
-      fitText(input.value, conf.font, conf.x, conf.y, conf.color, 400);
+      fitText(input.value, conf.font, conf.x, conf.y, conf.color, 500);
     }
   });
 
-  // Draw all uploaded images
+  // Draw uploaded images
   uploadedImgs.forEach(imgObj => {
     if (imgObj.img.complete) {
       ctx.drawImage(imgObj.img, imgObj.x, imgObj.y, imgObj.w, imgObj.h);
 
-      // Active selection with resize handle
       if (imgObj === activeImg) {
         ctx.strokeStyle = "red";
         ctx.lineWidth = 2;
@@ -76,7 +80,7 @@ function drawPoster() {
   });
 }
 
-// ---------------- AUTO RESIZE TEXT ----------------
+// ---------------- FIT TEXT ----------------
 function fitText(text, font, x, y, color, maxWidth) {
   let size = parseInt(font.match(/\d+/)[0]);
   let fontName = font.replace(/\d+px /, "");
@@ -104,7 +108,7 @@ imageUpload.addEventListener("change", (e) => {
     reader.onload = function(event) {
       const img = new Image();
       img.onload = () => {
-        uploadedImgs.push({ img, x: 900, y: 100, w: 200, h: 200 });
+        uploadedImgs.push({ img, x: 50, y: 100, w: 400, h: 500 });
         drawPoster();
       };
       img.src = event.target.result;
@@ -155,15 +159,8 @@ canvas.addEventListener("mousemove", e => {
   }
 });
 
-canvas.addEventListener("mouseup", () => {
-  dragging = false;
-  resizing = false;
-});
-
-canvas.addEventListener("mouseout", () => {
-  dragging = false;
-  resizing = false;
-});
+canvas.addEventListener("mouseup", () => { dragging = false; resizing = false; });
+canvas.addEventListener("mouseout", () => { dragging = false; resizing = false; });
 
 // ---------------- SAVE/LOAD ----------------
 saveBtn.addEventListener("click", () => {
