@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Poster Generator</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Poster Generator</h1>
+
+  <!-- Background Selection -->
+  <h3>Select a Background</h3>
+  <div id="backgroundGallery">
+    <img src="images/template1.jpg" class="bg-option">
+    <img src="images/template2.jpg" class="bg-option">
+    <img src="images/template3.jpg" class="bg-option">
+    <img src="images/template4.jpg" class="bg-option">
+  </div>
+
+  <!-- Text Inputs -->
+  <div class="inputs">
+    <label>Title: <input type="text" id="titleInput"></label><br>
+    <label>Subtitle: <input type="text" id="subtitleInput"></label><br>
+    <label>Contact: <input type="text" id="contactInput"></label>
+  </div>
+
+  <!-- Image Upload -->
+  <div>
+    <label>Upload Photo/Logo: <input type="file" id="imageUpload"></label>
+  </div>
+
+  <!-- Canvas Preview -->
+  <canvas id="posterCanvas" width="800" height="600"></canvas>
+
+  <!-- Buttons -->
+  <div class="buttons">
+    <button id="saveBtn">💾 Save Progress</button>
+    <button id="downloadBtn">⬇️ Download Poster</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+                                                                    </html>
