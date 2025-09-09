@@ -6,123 +6,181 @@ const saveBtn = document.getElementById("saveBtn");
 const downloadBtn = document.getElementById("downloadBtn");
 
 let templateImg = new Image();
-let uploadedImg = null;
-let currentTemplate = null;
+let uploadedImgs = []; 
+let activeImg = null; 
+let dragging = false;
+let resizing = false;
+let offsetX, offsetY;
+let resizeHandleSize = 15; // size of resize corner box
 
-// Template configurations: positions + styles
+// Template configuration (exact like your poster)
 const templateConfigs = {
   "images/template1.jpg": [
-    { key: "title", label: "Title", x: 400, y: 100, font: "bold 40px Arial", color: "white" },
-    { key: "subtitle", label: "Subtitle", x: 400, y: 200, font: "30px Arial", color: "yellow" },
-    { key: "contact", label: "Contact", x: 400, y: 300, font: "25px Arial", color: "cyan" }
-  ],
-  "images/template2.jpg": [
-    { key: "eventName", label: "Event Name", x: 200, y: 150, font: "bold 35px Georgia", color: "black" },
-    { key: "date", label: "Date", x: 200, y: 250, font: "25px Verdana", color: "red" },
-    { key: "venue", label: "Venue", x: 200, y: 350, font: "25px Verdana", color: "blue" }
+    { key: "region", x: 600, y: 70, font: "bold 35px Arial", color: "white" },
+    { key: "title", x: 600, y: 140, font: "bold 50px Arial", color: "yellow" },
+    { key: "invitation", x: 600, y: 190, font: "25px Arial", color: "white" },
+    { key: "event", x: 750, y: 300, font: "bold 90px Impact", color: "white" },
+    { key: "eventKind", x: 900, y: 380, font: "italic 60px Brush Script MT", color: "red" },
+    { key: "location", x: 200, y: 600, font: "25px Arial", color: "blue" },
+    { key: "date", x: 550, y: 600, font: "25px Arial", color: "blue" },
+    { key: "year", x: 750, y: 600, font: "25px Arial", color: "blue" },
+    { key: "time", x: 950, y: 600, font: "25px Arial", color: "blue" },
+    { key: "others", x: 200, y: 650, font: "25px Arial", color: "red" },
+    { key: "speaker", x: 600, y: 650, font: "25px Arial", color: "navy" },
+    { key: "contacts", x: 1000, y: 650, font: "25px Arial", color: "navy" }
   ]
 };
-
-// Dynamically create input fields
-function createInputs(template) {
-  const inputDiv = document.querySelector(".inputs");
-  inputDiv.innerHTML = ""; // clear old inputs
-
-  templateConfigs[template].forEach(conf => {
-    const wrapper = document.createElement("div");
-    wrapper.innerHTML = `
-      <label>${conf.label}: <input type="text" id="${conf.key}Input"></label>
-    `;
-    inputDiv.appendChild(wrapper);
-
-    // Attach listener
-    document.getElementById(`${conf.key}Input`).addEventListener("input", drawPoster);
-  });
-}
 
 // Load template
 function loadTemplate(src) {
   templateImg.src = src;
   templateImg.onload = () => drawPoster();
-  localStorage.setItem("selectedTemplate", src);
-  currentTemplate = src;
-  createInputs(src);
 }
 
-// Draw poster with positions from config
+// Draw poster
 function drawPoster() {
-  if (!currentTemplate) return;
-
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.drawImage(templateImg, 0, 0, canvas.width, canvas.height);
 
-  templateConfigs[currentTemplate].forEach(conf => {
+  templateConfigs["images/template1.jpg"].forEach(conf => {
     const input = document.getElementById(`${conf.key}Input`);
     if (input && input.value.trim() !== "") {
-      ctx.font = conf.font;
-      ctx.fillStyle = conf.color;
-      ctx.textAlign = "center";
-      ctx.fillText(input.value, conf.x, conf.y);
+      fitText(input.value, conf.font, conf.x, conf.y, conf.color, 400);
     }
   });
 
-  if (uploadedImg) {
-    ctx.drawImage(uploadedImg, canvas.width - 200, canvas.height - 200, 150, 150);
-  }
+  uploadedImgs.forEach(imgObj => {
+    ctx.drawImage(imgObj.img, imgObj.x, imgObj.y, imgObj.w, imgObj.h);
+
+    // Draw resize handle if active
+    if (imgObj === activeImg) {
+      ctx.strokeStyle = "red";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(imgObj.x, imgObj.y, imgObj.w, imgObj.h);
+      ctx.fillStyle = "white";
+      ctx.fillRect(imgObj.x + imgObj.w - resizeHandleSize, imgObj.y + imgObj.h - resizeHandleSize, resizeHandleSize, resizeHandleSize);
+      ctx.strokeRect(imgObj.x + imgObj.w - resizeHandleSize, imgObj.y + imgObj.h - resizeHandleSize, resizeHandleSize, resizeHandleSize);
+    }
+  });
 }
 
-// Handle image upload
+// Auto-resize text if too long
+function fitText(text, font, x, y, color, maxWidth) {
+  let size = parseInt(font.match(/\d+/)[0]);
+  let fontName = font.replace(/\d+px /, "");
+  ctx.font = font;
+  while (ctx.measureText(text).width > maxWidth && size > 10) {
+    size -= 2;
+    ctx.font = `bold ${size}px ${fontName}`;
+  }
+  ctx.fillStyle = color;
+  ctx.textAlign = "center";
+  ctx.fillText(text, x, y);
+}
+
+// Handle uploads
 imageUpload.addEventListener("change", (e) => {
-  const reader = new FileReader();
-  reader.onload = function(event) {
-    uploadedImg = new Image();
-    uploadedImg.onload = drawPoster;
-    uploadedImg.src = event.target.result;
-  };
-  reader.readAsDataURL(e.target.files[0]);
+  Array.from(e.target.files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const img = new Image();
+      img.onload = () => {
+        uploadedImgs.push({ img, x: 900, y: 100, w: 200, h: 200 });
+        drawPoster();
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+});
+
+// Detect if mouse is inside resize handle
+function insideResizeHandle(img, mx, my) {
+  return mx > img.x + img.w - resizeHandleSize &&
+         mx < img.x + img.w &&
+         my > img.y + img.h - resizeHandleSize &&
+         my < img.y + img.h;
+}
+
+// Mouse events
+canvas.addEventListener("mousedown", e => {
+  const mx = e.offsetX, my = e.offsetY;
+  activeImg = null;
+  for (let i = uploadedImgs.length - 1; i >= 0; i--) {
+    let img = uploadedImgs[i];
+    if (insideResizeHandle(img, mx, my)) {
+      activeImg = img;
+      resizing = true;
+      dragging = false;
+      return;
+    } else if (mx > img.x && mx < img.x + img.w && my > img.y && my < img.y + img.h) {
+      activeImg = img;
+      dragging = true;
+      resizing = false;
+      offsetX = mx - img.x;
+      offsetY = my - img.y;
+      return;
+    }
+  }
+});
+
+canvas.addEventListener("mousemove", e => {
+  if (!activeImg) return;
+  const mx = e.offsetX, my = e.offsetY;
+
+  if (dragging) {
+    activeImg.x = mx - offsetX;
+    activeImg.y = my - offsetY;
+    drawPoster();
+  } else if (resizing) {
+    activeImg.w = Math.max(50, mx - activeImg.x);
+    activeImg.h = Math.max(50, my - activeImg.y);
+    drawPoster();
+  }
+});
+
+canvas.addEventListener("mouseup", () => {
+  dragging = false;
+  resizing = false;
+});
+
+canvas.addEventListener("mouseout", () => {
+  dragging = false;
+  resizing = false;
 });
 
 // Save progress
 saveBtn.addEventListener("click", () => {
-  const data = { template: currentTemplate, texts: {}, uploadedImg: uploadedImg ? uploadedImg.src : null };
-  if (currentTemplate) {
-    templateConfigs[currentTemplate].forEach(conf => {
-      const input = document.getElementById(`${conf.key}Input`);
-      if (input) data.texts[conf.key] = input.value;
-    });
-  }
+  const data = { texts: {}, uploadedImgs: uploadedImgs.map(i => ({src: i.img.src, x: i.x, y: i.y, w: i.w, h: i.h})) };
+  templateConfigs["images/template1.jpg"].forEach(conf => {
+    const input = document.getElementById(`${conf.key}Input`);
+    if (input) data.texts[conf.key] = input.value;
+  });
   localStorage.setItem("posterData", JSON.stringify(data));
   alert("Progress saved!");
 });
 
 // Load saved progress
 window.onload = () => {
+  loadTemplate("images/template1.jpg");
   const saved = JSON.parse(localStorage.getItem("posterData"));
   if (saved) {
-    loadTemplate(saved.template);
-    setTimeout(() => {
-      templateConfigs[saved.template].forEach(conf => {
-        const input = document.getElementById(`${conf.key}Input`);
-        if (input && saved.texts[conf.key]) input.value = saved.texts[conf.key];
-      });
-      if (saved.uploadedImg) {
-        uploadedImg = new Image();
-        uploadedImg.onload = drawPoster;
-        uploadedImg.src = saved.uploadedImg;
-      }
-      drawPoster();
-    }, 300);
-  } else {
-    loadTemplate("images/template1.jpg"); // default
+    Object.keys(saved.texts).forEach(key => {
+      const input = document.getElementById(`${key}Input`);
+      if (input) input.value = saved.texts[key];
+    });
+    uploadedImgs = [];
+    saved.uploadedImgs.forEach(d => {
+      const img = new Image();
+      img.onload = () => {
+        uploadedImgs.push({img, x: d.x, y: d.y, w: d.w, h: d.h});
+        drawPoster();
+      };
+      img.src = d.src;
+    });
   }
+  drawPoster();
 };
-
-// Background selection
-document.querySelectorAll(".bg-option").forEach(img => {
-  img.addEventListener("click", () => {
-    loadTemplate(img.src);
-  });
-});
 
 // Download poster
 downloadBtn.addEventListener("click", () => {
