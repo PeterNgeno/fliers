@@ -6,14 +6,14 @@ const saveBtn = document.getElementById("saveBtn");
 const downloadBtn = document.getElementById("downloadBtn");
 
 let templateImg = new Image();
-let uploadedImgs = []; 
-let activeImg = null; 
+let uploadedImgs = [];
+let activeImg = null;
 let dragging = false;
 let resizing = false;
 let offsetX, offsetY;
-let resizeHandleSize = 15; // size of resize corner box
+let resizeHandleSize = 15;
 
-// Template configuration (exact like your poster)
+// ---------------- TEMPLATE CONFIG ----------------
 const templateConfigs = {
   "images/template1.jpg": [
     { key: "region", x: 600, y: 70, font: "bold 35px Arial", color: "white" },
@@ -31,17 +31,15 @@ const templateConfigs = {
   ]
 };
 
-// Load template
-function loadTemplate(src) {
-  templateImg.src = src;
-  templateImg.onload = () => drawPoster();
-}
-
-// Draw poster
+// ---------------- DRAW POSTER ----------------
 function drawPoster() {
+  // Always redraw background first
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(templateImg, 0, 0, canvas.width, canvas.height);
+  if (templateImg.complete) {
+    ctx.drawImage(templateImg, 0, 0, canvas.width, canvas.height);
+  }
 
+  // Draw all texts
   templateConfigs["images/template1.jpg"].forEach(conf => {
     const input = document.getElementById(`${conf.key}Input`);
     if (input && input.value.trim() !== "") {
@@ -49,22 +47,36 @@ function drawPoster() {
     }
   });
 
+  // Draw all uploaded images
   uploadedImgs.forEach(imgObj => {
-    ctx.drawImage(imgObj.img, imgObj.x, imgObj.y, imgObj.w, imgObj.h);
+    if (imgObj.img.complete) {
+      ctx.drawImage(imgObj.img, imgObj.x, imgObj.y, imgObj.w, imgObj.h);
 
-    // Draw resize handle if active
-    if (imgObj === activeImg) {
-      ctx.strokeStyle = "red";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(imgObj.x, imgObj.y, imgObj.w, imgObj.h);
-      ctx.fillStyle = "white";
-      ctx.fillRect(imgObj.x + imgObj.w - resizeHandleSize, imgObj.y + imgObj.h - resizeHandleSize, resizeHandleSize, resizeHandleSize);
-      ctx.strokeRect(imgObj.x + imgObj.w - resizeHandleSize, imgObj.y + imgObj.h - resizeHandleSize, resizeHandleSize, resizeHandleSize);
+      // Active selection with resize handle
+      if (imgObj === activeImg) {
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(imgObj.x, imgObj.y, imgObj.w, imgObj.h);
+
+        ctx.fillStyle = "white";
+        ctx.fillRect(
+          imgObj.x + imgObj.w - resizeHandleSize,
+          imgObj.y + imgObj.h - resizeHandleSize,
+          resizeHandleSize,
+          resizeHandleSize
+        );
+        ctx.strokeRect(
+          imgObj.x + imgObj.w - resizeHandleSize,
+          imgObj.y + imgObj.h - resizeHandleSize,
+          resizeHandleSize,
+          resizeHandleSize
+        );
+      }
     }
   });
 }
 
-// Auto-resize text if too long
+// ---------------- AUTO RESIZE TEXT ----------------
 function fitText(text, font, x, y, color, maxWidth) {
   let size = parseInt(font.match(/\d+/)[0]);
   let fontName = font.replace(/\d+px /, "");
@@ -78,7 +90,14 @@ function fitText(text, font, x, y, color, maxWidth) {
   ctx.fillText(text, x, y);
 }
 
-// Handle uploads
+// ---------------- LOAD TEMPLATE ----------------
+function loadTemplate(src) {
+  templateImg = new Image();
+  templateImg.onload = drawPoster;
+  templateImg.src = src;
+}
+
+// ---------------- IMAGE UPLOAD ----------------
 imageUpload.addEventListener("change", (e) => {
   Array.from(e.target.files).forEach(file => {
     const reader = new FileReader();
@@ -94,7 +113,7 @@ imageUpload.addEventListener("change", (e) => {
   });
 });
 
-// Detect if mouse is inside resize handle
+// ---------------- IMAGE MOVE/RESIZE ----------------
 function insideResizeHandle(img, mx, my) {
   return mx > img.x + img.w - resizeHandleSize &&
          mx < img.x + img.w &&
@@ -102,7 +121,6 @@ function insideResizeHandle(img, mx, my) {
          my < img.y + img.h;
 }
 
-// Mouse events
 canvas.addEventListener("mousedown", e => {
   const mx = e.offsetX, my = e.offsetY;
   activeImg = null;
@@ -111,12 +129,10 @@ canvas.addEventListener("mousedown", e => {
     if (insideResizeHandle(img, mx, my)) {
       activeImg = img;
       resizing = true;
-      dragging = false;
       return;
     } else if (mx > img.x && mx < img.x + img.w && my > img.y && my < img.y + img.h) {
       activeImg = img;
       dragging = true;
-      resizing = false;
       offsetX = mx - img.x;
       offsetY = my - img.y;
       return;
@@ -149,7 +165,7 @@ canvas.addEventListener("mouseout", () => {
   resizing = false;
 });
 
-// Save progress
+// ---------------- SAVE/LOAD ----------------
 saveBtn.addEventListener("click", () => {
   const data = { texts: {}, uploadedImgs: uploadedImgs.map(i => ({src: i.img.src, x: i.x, y: i.y, w: i.w, h: i.h})) };
   templateConfigs["images/template1.jpg"].forEach(conf => {
@@ -160,7 +176,6 @@ saveBtn.addEventListener("click", () => {
   alert("Progress saved!");
 });
 
-// Load saved progress
 window.onload = () => {
   loadTemplate("images/template1.jpg");
   const saved = JSON.parse(localStorage.getItem("posterData"));
@@ -173,16 +188,15 @@ window.onload = () => {
     saved.uploadedImgs.forEach(d => {
       const img = new Image();
       img.onload = () => {
-        uploadedImgs.push({img, x: d.x, y: d.y, w: d.w, h: d.h});
+        uploadedImgs.push({ img, x: d.x, y: d.y, w: d.w, h: d.h });
         drawPoster();
       };
       img.src = d.src;
     });
   }
-  drawPoster();
 };
 
-// Download poster
+// ---------------- DOWNLOAD ----------------
 downloadBtn.addEventListener("click", () => {
   const link = document.createElement("a");
   link.download = "poster.png";
