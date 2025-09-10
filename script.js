@@ -10,29 +10,29 @@ let uploadedImgs = [];
 
 // ---------------- TEMPLATE CONFIG ----------------
 const templateConfig = [
-  // MWAHE
-  { key: "altar", x: 200, y: 180, font: "bold 156px Rogbold-3IIGM", color: "black" },
+  // A. MWAHE
+  { key: "A", x: 200, y: 150, font: "bold 156px Rogbold-3IIGM", color: "black" },
 
-  // ALTAR
-  { key: "altar2", x: 200, y: 280, font: "bold 47px Arial", color: "goldenrod" },
+  // B. ALTAR
+  { key: "B", x: 200, y: 280, font: "bold 47px Arial", color: "goldenrod" },
 
-  // Welcomes you to:
-  { key: "invitation", x: 200, y: 360, font: "30px Arial", color: "red" },
+  // C. Welcomes you to:
+  { key: "C", x: 200, y: 360, font: "30px Arial", color: "red" },
 
-  // Venue
-  { key: "venue", x: 200, y: 420, font: "30px Arial", color: "white" },
+  // D. VENUE: Mwahe
+  { key: "D", x: 200, y: 420, font: "30px Arial", color: "white" },
 
-  // TIME 7:00AM
-  { key: "time", x: 200, y: 480, font: "19px Arial", color: "white", bg: "red" },
+  // E. TIME 7:00AM
+  { key: "E", x: 200, y: 480, font: "19px Arial", color: "white", bg: "red" },
 
-  // Contact info:
-  { key: "contactLabel", x: 200, y: 550, font: "20px Arial", color: "yellow" },
+  // F. Contact info:
+  { key: "F", x: 200, y: 550, font: "20px Arial", color: "yellow" },
 
-  // Snr Pst Julius Kirui
-  { key: "pastor", x: 200, y: 600, font: "17px Arial", color: "yellow" },
+  // G. Snr Pst Julius Kirui
+  { key: "G", x: 200, y: 600, font: "17px Arial", color: "yellow" },
 
-  // Phone
-  { key: "contacts", x: 200, y: 650, font: "20px Arial", color: "yellow" }
+  // H. Phone
+  { key: "H", x: 200, y: 650, font: "20px Arial", color: "yellow" }
 ];
 
 // ---------------- DRAW POSTER ----------------
@@ -45,7 +45,7 @@ function drawPoster() {
   templateConfig.forEach(conf => {
     const input = document.getElementById(`${conf.key}Input`);
     if (input && input.value.trim() !== "") {
-      fitText(input.value, conf.font, conf.x, conf.y, conf.color, 1000, conf.bg);
+      fitText(input.value, conf.font, conf.x, conf.y, conf.color, 1200, conf.bg);
     }
   });
 
