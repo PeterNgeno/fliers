@@ -2,43 +2,104 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Poster Generator</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Banner Creator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f2f2f2;
+    }
+    #canvas {
+      border: 2px solid #333;
+      margin-top: 20px;
+      background-size: cover;
+      background-position: center;
+    }
+    .controls {
+      margin: 10px;
+    }
+    label {
+      display: block;
+      margin: 8px 0 4px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Poster Generator</h1>
+  <h2>Banner / Poster Creator</h2>
+  <div class="controls">
+    <label>Choose Background:</label>
+    <input type="file" id="bgUpload" accept="image/*">
 
-  <!-- Inputs -->
-  <div class="inputs">
-    <label>Region: <input type="text" id="regionInput" placeholder="KERINGET REGION"></label><br>
-    <label>Altar: <input type="text" id="altarInput" placeholder="MWAHE ALTAR"></label><br>
-    <label>Invitation: <input type="text" id="invitationInput" placeholder="Welcomes you to..."></label><br>
-    <label>Event: <input type="text" id="eventInput" placeholder="SUNDAY"></label><br>
-    <label>Event Kind: <input type="text" id="eventKindInput" placeholder="Service"></label><br>
-
-    <label>Location Label: <input type="text" id="locationLabelInput" placeholder="LOCATION"></label><br>
-    <label>Location: <input type="text" id="locationInput" placeholder="Adjacent to Mwaii Township"></label><br>
-    <label>Date: <input type="text" id="dateInput" placeholder="10TH AUGUST 2025"></label><br>
-    <label>Time: <input type="text" id="timeInput" placeholder="7AM EAT"></label><br>
-
-    <label>Contact Label: <input type="text" id="contactLabelInput" placeholder="CONTACT INFO"></label><br>
-    <label>Contacts: <input type="text" id="contactsInput" placeholder="Snr Pst Julius Kirui 0727294739"></label>
+    <label>Upload Custom Photo:</label>
+    <input type="file" id="photoUpload" accept="image/*">
   </div>
 
-  <!-- Image Upload -->
-  <div>
-    <label>Upload Photo/Logo: <input type="file" id="imageUpload" multiple></label>
-  </div>
+  <canvas id="canvas" width="800" height="600"></canvas>
+  <br>
+  <button onclick="downloadBanner()">Download Banner</button>
 
-  <!-- Canvas Preview -->
-  <canvas id="posterCanvas" width="1350" height="750"></canvas>
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let background = null;
+    let photo = null;
 
-  <!-- Buttons -->
-  <div class="buttons">
-    <button id="saveBtn">💾 Save Progress</button>
-    <button id="downloadBtn">⬇️ Download Poster</button>
-  </div>
+    // Default text settings
+    const texts = [
+      { text: "MWAHE", x: 5, y: 100, size: 156, bold: true, font: "Rogbold-3IIGM, Arial" },
+      { text: "ALTAR", x: 5, y: 280, size: 47, bold: true, font: "Arial" },
+      { text: "Welcomes you to:", x: 5, y: 350, size: 30, bold: false, font: "Arial" }
+    ];
 
-  <script src="script.js"></script>
+    function drawBanner() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw background
+      if (background) ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+
+      // Draw uploaded photo
+      if (photo) ctx.drawImage(photo, 500, 200, 200, 200);
+
+      // Draw texts
+      texts.forEach(t => {
+        ctx.font = `${t.bold ? "bold" : ""} ${t.size}px ${t.font}`;
+        ctx.fillStyle = "white";
+        ctx.fillText(t.text, t.x, t.y);
+      });
+    }
+
+    document.getElementById('bgUpload').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const img = new Image();
+      img.onload = () => {
+        background = img;
+        drawBanner();
+      };
+      img.src = URL.createObjectURL(file);
+    });
+
+    document.getElementById('photoUpload').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const img = new Image();
+      img.onload = () => {
+        photo = img;
+        drawBanner();
+      };
+      img.src = URL.createObjectURL(file);
+    });
+
+    function downloadBanner() {
+      const link = document.createElement('a');
+      link.download = "banner.png";
+      link.href = canvas.toDataURL();
+      link.click();
+    }
+
+    // Initial draw
+    drawBanner();
+  </script>
 </body>
-  </html>
+</html>
