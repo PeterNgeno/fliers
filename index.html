@@ -2,37 +2,26 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Poster Generator</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Poster Generator</h1>
+  <h2>Poster Generator</h2>
 
-  <!-- Inputs -->
   <div class="inputs">
-    <label>A. MWAHE: <input type="text" id="AInput" value="MWAHE"></label><br>
-    <label>B. ALTAR: <input type="text" id="BInput" value="ALTAR"></label><br>
-    <label>C. Invitation: <input type="text" id="CInput" value="Welcomes you to:"></label><br>
-    <label>D. Venue: <input type="text" id="DInput" value="VENUE: Mwahe"></label><br>
-    <label>E. Time: <input type="text" id="EInput" value="7:00AM"></label><br>
-    <label>F. Contact Label: <input type="text" id="FInput" value="Contact info:"></label><br>
-    <label>G. Pastor: <input type="text" id="GInput" value="Snr Pst Julius Kirui"></label><br>
-    <label>H. Phone: <input type="text" id="HInput" value="0703 244 966"></label><br>
+    <label>A. MWAHE: <input type="text" id="aInput" value="MWAHE"></label><br>
+    <label>B. ALTAR: <input type="text" id="bInput" value="ALTAR"></label><br>
+    <label>C. Invitation: <input type="text" id="cInput" value="Welcomes you to:"></label><br>
+    <label>D. Venue: <input type="text" id="dInput" value="VENUE: Mwahe"></label><br>
+    <label>E. Time: <input type="text" id="eInput" value="7:00AM"></label><br>
+    <label>F. Contact Label: <input type="text" id="fInput" value="Contact info:"></label><br>
+    <label>G. Pastor: <input type="text" id="gInput" value="Snr Pst Julius Kirui"></label><br>
+    <label>H. Contacts: <input type="text" id="hInput" value="0703 244 966"></label><br>
   </div>
 
-  <!-- Image Upload -->
-  <div>
-    <label>Upload Photo/Logo: <input type="file" id="imageUpload" multiple></label>
-  </div>
-
-  <!-- Canvas Preview -->
-  <canvas id="posterCanvas" width="1350" height="750"></canvas>
-
-  <!-- Buttons -->
-  <div class="buttons">
-    <button id="saveBtn">💾 Save Progress</button>
-    <button id="downloadBtn">⬇️ Download Poster</button>
-  </div>
+  <canvas id="posterCanvas" width="1350" height="750"></canvas><br>
+  <button onclick="downloadPoster()">Download Poster</button>
 
   <script src="script.js"></script>
 </body>
