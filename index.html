@@ -2,167 +2,43 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Banner Generator</title>
-  <style>
-    body { text-align: center; background: #111; color: white; }
-    canvas { border: 2px solid #333; margin: 20px; background: linear-gradient(to right, #001144, #880000); cursor: move; }
-    input { margin: 5px; }
-    @font-face {
-      font-family: 'Rogbold';
-      src: url('Rogbold-3IIGM.ttf') format('truetype'); /* Place font in same folder */
-    }
-  </style>
+  <title>Poster Generator</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h2>Custom Banner</h2>
-  <canvas id="banner" width="1200" height="700"></canvas><br>
+  <h1>Poster Generator</h1>
 
   <!-- Inputs -->
-  <input type="text" id="region" placeholder="Region" value="KERINGET REGION">
-  <input type="text" id="title" placeholder="Title" value="MWAHE ALTAR">
-  <input type="text" id="invite" placeholder="Invitation" value="WELCOMES YOU TO:">
-  <input type="text" id="event" placeholder="Event" value="SUNDAY">
-  <input type="text" id="kind" placeholder="Event Kind" value="SERVICE"><br>
-  <input type="text" id="location" placeholder="Location" value="Adjacent to mwaii township">
-  <input type="text" id="date" placeholder="Date" value="10Th August">
-  <input type="text" id="year" placeholder="Year" value="3025">
-  <input type="text" id="time" placeholder="Time" value="7AM EAT"><br>
-  <input type="text" id="others" placeholder="Others" value="CONTACT INFO:">
-  <input type="text" id="speaker" placeholder="Speaker" value="Snr pst Julius Kirui">
-  <input type="text" id="contacts" placeholder="Contacts" value="07XXXXXXXX"><br>
+  <div class="inputs">
+    <label>Region: <input type="text" id="regionInput" placeholder="KERINGET REGION"></label><br>
+    <label>Altar: <input type="text" id="altarInput" placeholder="MWAHE ALTAR"></label><br>
+    <label>Invitation: <input type="text" id="invitationInput" placeholder="Welcomes you to..."></label><br>
+    <label>Event: <input type="text" id="eventInput" placeholder="SUNDAY"></label><br>
+    <label>Event Kind: <input type="text" id="eventKindInput" placeholder="Service"></label><br>
 
-  <!-- Upload images -->
-  <input type="file" id="upload" multiple accept="image/*">
+    <label>Location Label: <input type="text" id="locationLabelInput" placeholder="LOCATION"></label><br>
+    <label>Location: <input type="text" id="locationInput" placeholder="Adjacent to Mwaii Township"></label><br>
+    <label>Date: <input type="text" id="dateInput" placeholder="10TH AUGUST 2025"></label><br>
+    <label>Time: <input type="text" id="timeInput" placeholder="7AM EAT"></label><br>
 
-  <script>
-    const canvas = document.getElementById("banner");
-    const ctx = canvas.getContext("2d");
+    <label>Contact Label: <input type="text" id="contactLabelInput" placeholder="CONTACT INFO"></label><br>
+    <label>Contacts: <input type="text" id="contactsInput" placeholder="Snr Pst Julius Kirui 0727294739"></label>
+  </div>
 
-    const fields = {
-      region: {x:600, y:50, color:"#fff", font:"bold 32px Arial", align:"center"},
-      title: {x:600, y:130, color:"yellow", font:"bold 156px Rogbold", align:"center"},
-      invite: {x:600, y:190, color:"#fff", font:"30px Arial", align:"center"},
-      event: {x:600, y:300, color:"#fff", font:"bold 100px Arial", align:"center"},
-      kind: {x:900, y:350, color:"red", font:"bold 60px Arial", align:"left"},
-      location: {x:250, y:600, color:"blue", font:"24px Arial", align:"left"},
-      date: {x:500, y:650, color:"navy", font:"bold 30px Arial", align:"center"},
-      year: {x:700, y:650, color:"navy", font:"bold 30px Arial", align:"center"},
-      time: {x:900, y:650, color:"black", font:"bold 30px Arial", align:"center"},
-      others: {x:250, y:700, color:"red", font:"bold 24px Arial", align:"left"},
-      speaker: {x:650, y:700, color:"blue", font:"24px Arial", align:"center"},
-      contacts: {x:950, y:700, color:"black", font:"24px Arial", align:"left"},
-    };
+  <!-- Image Upload -->
+  <div>
+    <label>Upload Photo/Logo: <input type="file" id="imageUpload" multiple></label>
+  </div>
 
-    // Store uploaded images
-    let images = [];
+  <!-- Canvas Preview -->
+  <canvas id="posterCanvas" width="1350" height="750"></canvas>
 
-    class BannerImage {
-      constructor(img) {
-        this.img = img;
-        this.x = 100;
-        this.y = 100;
-        this.scale = 0.5;
-        this.dragging = false;
-      }
-      draw(ctx) {
-        const w = this.img.width * this.scale;
-        const h = this.img.height * this.scale;
-        ctx.drawImage(this.img, this.x, this.y, w, h);
-      }
-      isInside(mx, my) {
-        const w = this.img.width * this.scale;
-        const h = this.img.height * this.scale;
-        return (mx > this.x && mx < this.x + w && my > this.y && my < this.y + h);
-      }
-    }
+  <!-- Buttons -->
+  <div class="buttons">
+    <button id="saveBtn">💾 Save Progress</button>
+    <button id="downloadBtn">⬇️ Download Poster</button>
+  </div>
 
-    function drawBanner() {
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-
-      // background gradient
-      let grad = ctx.createLinearGradient(0,0,canvas.width,canvas.height);
-      grad.addColorStop(0,"#001144");
-      grad.addColorStop(1,"#cc0000");
-      ctx.fillStyle = grad;
-      ctx.fillRect(0,0,canvas.width,canvas.height);
-
-      // draw images
-      images.forEach(img => img.draw(ctx));
-
-      // draw text fields
-      for (let key in fields) {
-        const val = document.getElementById(key).value;
-        const f = fields[key];
-        ctx.font = f.font;
-        ctx.fillStyle = f.color;
-        ctx.textAlign = f.align;
-        ctx.fillText(val, f.x, f.y);
-      }
-    }
-
-    // Update on text input
-    document.querySelectorAll("input[type=text]").forEach(inp=>{
-      inp.addEventListener("input", drawBanner);
-    });
-
-    // Upload images
-    document.getElementById("upload").addEventListener("change", e=>{
-      Array.from(e.target.files).forEach(file=>{
-        const img = new Image();
-        img.onload = ()=> {
-          images.push(new BannerImage(img));
-          drawBanner();
-        };
-        img.src = URL.createObjectURL(file);
-      });
-    });
-
-    // Dragging logic
-    let selected = null;
-    let offsetX, offsetY;
-
-    canvas.addEventListener("mousedown", e=>{
-      const rect = canvas.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
-
-      images.forEach(img=>{
-        if(img.isInside(mx,my)) {
-          selected = img;
-          offsetX = mx - img.x;
-          offsetY = my - img.y;
-          img.dragging = true;
-        }
-      });
-    });
-
-    canvas.addEventListener("mousemove", e=>{
-      if(selected && selected.dragging) {
-        const rect = canvas.getBoundingClientRect();
-        const mx = e.clientX - rect.left;
-        const my = e.clientY - rect.top;
-        selected.x = mx - offsetX;
-        selected.y = my - offsetY;
-        drawBanner();
-      }
-    });
-
-    canvas.addEventListener("mouseup", ()=> {
-      if(selected) selected.dragging = false;
-      selected = null;
-    });
-
-    // Resize with wheel
-    canvas.addEventListener("wheel", e=>{
-      if(selected) {
-        e.preventDefault();
-        selected.scale += e.deltaY * -0.001;
-        if(selected.scale < 0.1) selected.scale = 0.1;
-        drawBanner();
-      }
-    });
-
-    drawBanner();
-  </script>
+  <script src="script.js"></script>
 </body>
-    </html>
+</html>
