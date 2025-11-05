@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Poster Editor — Translucent Text Backgrounds</title>
+<title>Poster Editor — Title Fit + Semi-Transparent Backgrounds</title>
 <style>
   :root {
     --poster-width: 800px;
@@ -32,7 +32,6 @@
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
     background: #fff;
   }
-
   .poster-frame .bg {
     position: absolute;
     inset: 0;
@@ -43,30 +42,35 @@
     pointer-events: none;
   }
 
-  /* Headline now has a translucent rounded background */
+  /* Headline container with translucent background */
   .headline {
     position: absolute;
     top: 40px;
     left: var(--left-margin);
-    z-index: 60; /* above photo */
+    z-index: 60;
     color: #fff;
-    text-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
+    text-shadow: 0 3px 10px rgba(0,0,0,0.45);
     max-width: calc(100% - var(--slot-width) - var(--slot-right) - 80px);
-    background: rgba(255,255,255,0.12); /* translucent */
-    padding: 14px 18px;
-    border-radius: 14px;
-    backdrop-filter: blur(6px); /* soft blur behind text (modern browsers) */
+    background: rgba(255,255,255,0.06); /* near transparent */
+    padding: 12px 16px;
+    border-radius: 12px;
+    backdrop-filter: blur(6px);
+    display: inline-block;
   }
+
+  /* Title: prevent wrapping and let JS shrink to fit */
   .headline h1 {
     margin: 0;
-    font-size: 64px;
+    font-size: 64px; /* starting size - will be adjusted by JS */
     line-height: 0.95;
-    word-break: break-word;
+    white-space: nowrap; /* important: prevent vertical stacking */
+    overflow: visible;
   }
   .headline p {
     margin: 8px 0 0 0;
     font-size: 22px;
-    color: rgba(255, 255, 255, 0.95);
+    color: rgba(255,255,255,0.95);
+    white-space: nowrap; /* keep subtitle on one line too */
   }
 
   .photo-slot {
@@ -77,113 +81,53 @@
     height: var(--slot-height);
     border-radius: 18px;
     overflow: hidden;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-    z-index: 50; /* under headline but above bg */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.28);
+    z-index: 50;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(255,255,255,0.02);
   }
 
-  .photo-slot img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-    transform-origin: center;
-    transition: transform 0.15s ease;
-    display:block;
-  }
-  .photo-slot::after {
-    content: "";
-    position: absolute;
-    inset: auto 0 0 0;
-    height: 30%;
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255,255,255,1) 100%);
-    opacity: 0.85;
-    pointer-events: none;
-  }
+  .photo-slot img { width:100%; height:100%; object-fit:cover; object-position:center; transform-origin:center; transition: transform .15s ease; display:block; }
+  .photo-slot::after { content:""; position:absolute; inset:auto 0 0 0; height:30%; background:linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%); opacity:0.85; pointer-events:none; }
 
-  /* Info box translucent */
+  /* Info box translucent (more transparent than before) */
   .info {
     position: absolute;
     left: 40px;
     bottom: 60px;
     width: calc(100% - 100px);
     max-width: 700px;
-    background: rgba(255, 255, 255, 0.78); /* more translucent */
+    background: rgba(255,255,255,0.5); /* semi-transparent */
     color: #0b3a61;
     border-radius: 10px;
-    padding: 18px 22px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+    padding: 16px 20px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.10);
     z-index: 60;
     backdrop-filter: blur(3px);
   }
-  .info h2 {
-    margin: 0 0 8px 0;
-    font-size: 20px;
-  }
-  .info ul {
-    margin: 5px 0 0 18px;
-    padding: 0;
-  }
-  .info li {
-    margin: 5px 0;
-    line-height: 1.35;
-  }
+  .info h2 { margin:0 0 8px 0; font-size:20px; }
+  .info ul { margin:6px 0 0 18px; padding:0; }
+  .info li { margin:6px 0; line-height:1.35; }
 
-  /* Upload and controls */
-  .controls {
-    position: absolute;
-    bottom: 15px;
-    right: 20px;
-    z-index: 70;
-    display: flex;
-    gap: 8px;
-    align-items:center;
-  }
-  .controls input {
-    display: none;
-  }
-  .controls label,
-  .controls button {
-    background: #0a58ca;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  .controls .zoom-btn {
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-  }
+  /* Controls */
+  .controls { position:absolute; bottom:15px; right:20px; z-index:70; display:flex; gap:8px; align-items:center; }
+  .controls input{ display:none; }
+  .controls label, .controls button { background:#0a58ca; color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer; font-weight:600; }
+  .zoom-btn { width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:20px; }
 
-  /* small placeholder text */
-  #placeholder { color:#555; font-weight:600; text-align:center; padding:8px; }
+  #placeholder{ color:#555; font-weight:600; text-align:center; padding:8px; }
 
-  @media (max-width: 900px) {
-    :root {
-      --poster-width: 360px;
-      --poster-height: 640px;
-      --slot-width: 150px;
-      --slot-height: 320px;
-      --slot-top: 90px;
-      --slot-right: 20px;
-    }
-    .headline h1 { font-size: 36px; }
-    .info { width: calc(100% - 60px); left: 30px; bottom: 25px; }
+  @media (max-width:900px){
+    :root { --poster-width:360px; --poster-height:640px; --slot-width:150px; --slot-height:320px; --slot-top:90px; --slot-right:20px; }
+    .headline h1{ font-size:36px; }
+    .info { width: calc(100% - 60px); left:30px; bottom:25px; }
   }
 </style>
 </head>
 <body>
   <div class="poster-frame" id="poster">
-    <!-- Replace with your poster background file in same folder -->
     <img src="IMG-20251105-WA0012.jpg" alt="Poster background" class="bg" id="bgImage">
 
     <div class="photo-slot" id="slot">
@@ -191,7 +135,7 @@
       <div id="placeholder">Upload photo here</div>
     </div>
 
-    <div class="headline">
+    <div class="headline" id="headlineBox">
       <h1 contenteditable="true" id="title">HAPPY</h1>
       <p contenteditable="true" id="sub">Birthday Christopher</p>
     </div>
@@ -215,212 +159,105 @@
     </div>
   </div>
 
-<!-- TensorFlow + BodyPix (loads model) -->
+<!-- BodyPix -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.0.5/dist/body-pix.js"></script>
 
 <script>
-/* ---------- UI: upload, zoom, drag ---------- */
+/* ----------------- UI: upload / move / zoom ----------------- */
 const fileInput = document.getElementById('fileInput');
 const userImage = document.getElementById('userImage');
 const placeholder = document.getElementById('placeholder');
 const slot = document.getElementById('slot');
 const poster = document.getElementById('poster');
+const titleEl = document.getElementById('title');
 let scale = 1, translateX = 0, translateY = 0, dragging = false, startX = 0, startY = 0;
 
-fileInput.addEventListener('change', e => {
-  const file = e.target.files && e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    userImage.src = ev.target.result;
-    userImage.style.display = 'block';
-    placeholder.style.display = 'none';
-    scale = 1; translateX = translateY = 0;
-    updateTransform();
-  };
-  reader.readAsDataURL(file);
+fileInput.addEventListener('change', e=>{
+  const f = e.target.files && e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ev => { userImage.src = ev.target.result; userImage.style.display='block'; placeholder.style.display='none'; scale=1; translateX=translateY=0; updateTransform(); }
+  r.readAsDataURL(f);
 });
+slot.addEventListener('dragover', e=>{ e.preventDefault(); slot.style.opacity=0.98; });
+slot.addEventListener('dragleave', e=>{ slot.style.opacity=1; });
+slot.addEventListener('drop', e=>{ e.preventDefault(); slot.style.opacity=1; const f = e.dataTransfer.files && e.dataTransfer.files[0]; if(!f) return; const r = new FileReader(); r.onload = ev => { userImage.src = ev.target.result; userImage.style.display='block'; placeholder.style.display='none'; scale=1; translateX=translateY=0; updateTransform(); }; r.readAsDataURL(f); });
 
-slot.addEventListener('dragover', e => { e.preventDefault(); slot.style.opacity = 0.98; });
-slot.addEventListener('dragleave', e => { slot.style.opacity = 1; });
-slot.addEventListener('drop', e => {
-  e.preventDefault(); slot.style.opacity = 1;
-  const f = e.dataTransfer.files && e.dataTransfer.files[0];
-  if (!f) return;
-  const reader = new FileReader();
-  reader.onload = ev => {
-    userImage.src = ev.target.result;
-    userImage.style.display = 'block';
-    placeholder.style.display = 'none';
-    scale = 1; translateX = translateY = 0;
-    updateTransform();
-  };
-  reader.readAsDataURL(f);
-});
+function updateTransform(){ userImage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`; }
 
-function updateTransform(){
-  userImage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
-}
+slot.addEventListener('pointerdown', e=>{ if(userImage.style.display==='none') return; dragging=true; startX=e.clientX; startY=e.clientY; slot.setPointerCapture && slot.setPointerCapture(e.pointerId); });
+window.addEventListener('pointermove', e=>{ if(!dragging) return; translateX += e.clientX - startX; translateY += e.clientY - startY; startX = e.clientX; startY = e.clientY; updateTransform(); });
+window.addEventListener('pointerup', ()=> dragging=false);
 
-// pointer drag for repositioning
-slot.addEventListener('pointerdown', e => {
-  if (userImage.style.display === 'none') return;
-  dragging = true;
-  startX = e.clientX; startY = e.clientY;
-  slot.setPointerCapture && slot.setPointerCapture(e.pointerId);
-});
-window.addEventListener('pointermove', e => {
-  if (!dragging) return;
-  translateX += e.clientX - startX;
-  translateY += e.clientY - startY;
-  startX = e.clientX; startY = e.clientY;
-  updateTransform();
-});
-window.addEventListener('pointerup', e => { dragging = false; });
-
-// zoom
 document.getElementById('zoomIn').addEventListener('click', ()=>{ scale = Math.min(3.5, scale + 0.1); updateTransform(); });
 document.getElementById('zoomOut').addEventListener('click', ()=>{ scale = Math.max(0.5, scale - 0.1); updateTransform(); });
 
-/* ---------- BodyPix background removal (client-side) ---------- */
-let bodyPixNet = null;
-let bgRemoving = false;
+/* ----------------- Title auto-fit: prevent vertical stacking ----------------- */
+function fitTitleToOneLine() {
+  const container = document.querySelector('.headline');
+  const maxWidth = container.clientWidth - 28; // padding buffer
+  let fontSize = 64; // start size
+  titleEl.style.fontSize = fontSize + 'px';
+  // decrease until it fits on one line or reaches min size
+  while (titleEl.scrollWidth > maxWidth && fontSize > 28) {
+    fontSize -= 2;
+    titleEl.style.fontSize = fontSize + 'px';
+  }
+}
+titleEl.addEventListener('input', ()=> { fitTitleToOneLine(); });
+window.addEventListener('resize', ()=> { fitTitleToOneLine(); });
 
+/* run at load */
+document.addEventListener('DOMContentLoaded', ()=>{ fitTitleToOneLine(); });
+
+/* ----------------- BodyPix background removal ----------------- */
+let bodyPixNet = null, bgRemoving = false;
 async function enableRemoveButtonWhenReady(){
   const btn = document.getElementById('removeBgBtn');
-  if (btn) {
-    btn.disabled = false;
-    btn.innerText = 'Remove BG';
-  } else {
-    setTimeout(enableRemoveButtonWhenReady, 300);
-  }
+  if (btn) { btn.disabled = false; btn.innerText = 'Remove BG'; } else setTimeout(enableRemoveButtonWhenReady, 300);
 }
-
 async function setupBgRemoval(){
   try {
-    console.log('Loading BodyPix model...');
-    bodyPixNet = await bodyPix.load({
-      architecture: 'MobileNetV1',
-      outputStride: 16,
-      multiplier: 0.75,
-      quantBytes: 2
-    });
-    console.log('BodyPix loaded');
+    bodyPixNet = await bodyPix.load({ architecture:'MobileNetV1', outputStride:16, multiplier:0.75, quantBytes:2 });
     enableRemoveButtonWhenReady();
-  } catch(err){
-    console.error('BodyPix load failed', err);
-    alert('Background-removal model failed to load. Try reloading the page.');
-  }
+  } catch(e){ console.error('BodyPix load failed', e); alert('BG model failed to load'); }
 }
-
 async function removeBackgroundFromUserImage(){
-  if (!bodyPixNet) { alert('Model loading — wait a moment and try again'); return; }
-  if (bgRemoving) return;
-  const userImageEl = document.getElementById('userImage');
-  if (!userImageEl || !userImageEl.src) { alert('Upload a photo first'); return; }
-  bgRemoving = true;
-  const btn = document.getElementById('removeBgBtn');
-  if (btn) { btn.innerText = 'Removing…'; btn.disabled = true; }
+  if(!bodyPixNet) { alert('Model still loading'); return; }
+  if(bgRemoving) return;
+  const ui = document.getElementById('userImage');
+  if(!ui || !ui.src) { alert('Upload a photo first'); return; }
+  bgRemoving = true; const btn = document.getElementById('removeBgBtn'); if(btn){ btn.innerText='Removing…'; btn.disabled=true; }
   try {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = userImageEl.src;
-    await new Promise((res, rej)=>{ img.onload = res; img.onerror = rej; });
-
-    const segmentation = await bodyPixNet.segmentPerson(img, {
-      flipHorizontal: false,
-      internalResolution: 'medium',
-      segmentationThreshold: 0.7
-    });
-
+    const img = new Image(); img.crossOrigin='anonymous'; img.src = ui.src; await new Promise((r,rej)=>{ img.onload=r; img.onerror=rej; });
+    const seg = await bodyPixNet.segmentPerson(img, { flipHorizontal:false, internalResolution:'medium', segmentationThreshold:0.7 });
     const w = img.naturalWidth, h = img.naturalHeight;
-    const out = document.createElement('canvas'); out.width = w; out.height = h;
-    const ctx = out.getContext('2d');
-    ctx.drawImage(img, 0, 0, w, h);
-    const imageData = ctx.getImageData(0,0,w,h);
-    const pix = imageData.data;
-    const seg = segmentation.data;
-    for (let i=0, p=0; i<seg.length; i++, p+=4){
-      const isPerson = seg[i] === 1;
-      if (!isPerson) pix[p+3] = 0; else pix[p+3] = 255;
-    }
-    ctx.putImageData(imageData, 0, 0);
-    userImageEl.src = out.toDataURL('image/png');
-    userImageEl.style.display = 'block';
-    placeholder.style.display = 'none';
-  } catch(err){
-    console.error(err);
-    alert('Background removal failed. See console for details.');
-  } finally {
-    bgRemoving = false;
-    if (btn) { btn.disabled = false; btn.innerText = 'Remove BG'; }
-  }
+    const out = document.createElement('canvas'); out.width=w; out.height=h; const ctx = out.getContext('2d'); ctx.drawImage(img,0,0,w,h);
+    const imageData = ctx.getImageData(0,0,w,h); const pix = imageData.data; const s = seg.data;
+    for(let i=0,p=0;i<s.length;i++,p+=4){ if(s[i]===1) pix[p+3]=255; else pix[p+3]=0; }
+    ctx.putImageData(imageData,0,0); ui.src = out.toDataURL('image/png'); ui.style.display='block'; placeholder.style.display='none';
+  } catch(err){ console.error(err); alert('BG removal failed'); }
+  finally { bgRemoving=false; if(btn){ btn.disabled=false; btn.innerText='Remove BG'; } }
 }
+document.addEventListener('DOMContentLoaded', ()=>{ document.getElementById('removeBgBtn').addEventListener('click', removeBackgroundFromUserImage); setupBgRemoval(); });
 
-/* wire remove button after DOM ready */
-document.addEventListener('DOMContentLoaded', ()=>{
-  const removeBtn = document.getElementById('removeBgBtn');
-  if (removeBtn) removeBtn.addEventListener('click', removeBackgroundFromUserImage);
-  // start loading model
-  setupBgRemoval();
-});
+/* ----------------- Export: draw translucent boxes + photo card + text ----------------- */
+function roundedRectPath(ctx,x,y,w,h,r){ const min = Math.min(w,h)/2; if(r>min) r=min; ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function wrapText(ctx,text,x,y,maxWidth,lineH){ const words = text.split(' '); let line=''; for(let n=0;n<words.length;n++){ const test = line + words[n] + ' '; const m = ctx.measureText(test); if(m.width > maxWidth && n>0){ ctx.fillText(line.trim(), x, y); line = words[n] + ' '; y += lineH; } else line=test; } if(line) ctx.fillText(line.trim(), x, y); return y; }
+function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.crossOrigin='anonymous'; i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
 
-/* ---------- Improved Export (draw UI elements to canvas to match screenshot) ---------- */
-function roundedRectPath(ctx, x, y, width, height, r) {
-  const min = Math.min(width, height) / 2;
-  if (r > min) r = min;
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + width, y, x + width, y + height, r);
-  ctx.arcTo(x + width, y + height, x, y + height, r);
-  ctx.arcTo(x, y + height, x, y, r);
-  ctx.arcTo(x, y, x + width, y, r);
-  ctx.closePath();
-}
-function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-  const words = text.split(' ');
-  let line = '';
-  for (let n = 0; n < words.length; n++) {
-    const testLine = line + words[n] + ' ';
-    const metrics = ctx.measureText(testLine);
-    if (metrics.width > maxWidth && n > 0) {
-      ctx.fillText(line.trim(), x, y);
-      line = words[n] + ' ';
-      y += lineHeight;
-    } else {
-      line = testLine;
-    }
-  }
-  if (line) ctx.fillText(line.trim(), x, y);
-  return y;
-}
+document.getElementById('downloadBtn').addEventListener('click', async ()=>{
+  try{
+    // ensure title fits before export
+    fitTitleToOneLine();
 
-function loadImage(src){
-  return new Promise((res, rej)=>{
-    const i = new Image();
-    i.crossOrigin = 'anonymous';
-    i.onload = ()=>res(i);
-    i.onerror = rej;
-    i.src = src;
-  });
-}
-
-document.getElementById('downloadBtn').addEventListener('click', async () => {
-  try {
     const posterEl = document.getElementById('poster');
     const w = posterEl.clientWidth, h = posterEl.clientHeight;
-    const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
-    const ctx = canvas.getContext('2d');
+    const canvas = document.createElement('canvas'); canvas.width=w; canvas.height=h; const ctx = canvas.getContext('2d');
 
-    // draw background
+    // draw bg
     const bgEl = document.getElementById('bgImage');
-    if (bgEl && bgEl.src) {
-      const bgImg = await loadImage(bgEl.src);
-      ctx.drawImage(bgImg, 0, 0, w, h);
-    } else {
-      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h);
-    }
+    if(bgEl && bgEl.src){ const bgImg = await loadImage(bgEl.src); ctx.drawImage(bgImg,0,0,w,h); } else { ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); }
 
     // slot geometry
     const slotRect = slot.getBoundingClientRect();
@@ -431,155 +268,80 @@ document.getElementById('downloadBtn').addEventListener('click', async () => {
     const sh = Math.round(slotRect.height);
     const cornerRadius = 18;
 
-    // draw photo card shadow + white card
+    // photo card shadow + card
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,0.28)';
-    ctx.shadowBlur = 20;
-    ctx.shadowOffsetY = 8;
+    ctx.shadowBlur = 20; ctx.shadowOffsetY=8;
     ctx.fillStyle = 'rgba(255,255,255,0.96)';
-    roundedRectPath(ctx, sx, sy, sw, sh, cornerRadius);
-    ctx.fill();
+    roundedRectPath(ctx,sx,sy,sw,sh,cornerRadius); ctx.fill();
     ctx.restore();
 
-    // draw user image clipped
-    if (userImage && userImage.src) {
+    // draw user image clipped and faded
+    if(userImage && userImage.src){
       const img = await loadImage(userImage.src);
-
       const imgRatio = img.width / img.height;
       const slotRatio = sw / sh;
-      let baseDrawW, baseDrawH, baseDX, baseDY;
-      if (imgRatio > slotRatio) {
-        baseDrawH = sh;
-        baseDrawW = img.width * (sh / img.height);
-        baseDX = sx - (baseDrawW - sw) / 2;
-        baseDY = sy;
-      } else {
-        baseDrawW = sw;
-        baseDrawH = img.height * (sw / img.width);
-        baseDX = sx;
-        baseDY = sy - (baseDrawH - sh) / 2;
-      }
-
-      // parse transform translate/scale
-      let tx = 0, ty = 0, s = 1;
+      let baseW, baseH, baseX, baseY;
+      if(imgRatio > slotRatio){ baseH = sh; baseW = img.width * (sh / img.height); baseX = sx - (baseW - sw)/2; baseY = sy; }
+      else { baseW = sw; baseH = img.height * (sw / img.width); baseX = sx; baseY = sy - (baseH - sh)/2; }
+      // parse transform
+      let tx=0, ty=0, s=1;
       const t = userImage.style.transform || '';
       const m = t.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)\s*scale\(([\d.]+)\)/);
-      if (m) { tx = parseFloat(m[1]); ty = parseFloat(m[2]); s = parseFloat(m[3]); }
-      else {
-        const sMatch = t.match(/scale\(([\d.]+)\)/);
-        const xMatch = t.match(/translateX\(([-\d.]+)px\)/);
-        const yMatch = t.match(/translateY\(([-\d.]+)px\)/);
-        if (sMatch) s = parseFloat(sMatch[1]);
-        if (xMatch) tx = parseFloat(xMatch[1]);
-        if (yMatch) ty = parseFloat(yMatch[1]);
-      }
-
-      const finalW = baseDrawW * s;
-      const finalH = baseDrawH * s;
-      const finalX = baseDX + tx + (sw - baseDrawW)/2;
-      const finalY = baseDY + ty;
-
-      ctx.save();
-      roundedRectPath(ctx, sx, sy, sw, sh, cornerRadius);
-      ctx.clip();
+      if(m){ tx=parseFloat(m[1]); ty=parseFloat(m[2]); s=parseFloat(m[3]); }
+      else { const sM = t.match(/scale\(([\d.]+)\)/); const xM = t.match(/translateX\(([-\d.]+)px\)/); const yM = t.match(/translateY\(([-\d.]+)px\)/); if(sM) s=parseFloat(sM[1]); if(xM) tx=parseFloat(xM[1]); if(yM) ty=parseFloat(yM[1]); }
+      const finalW = baseW * s, finalH = baseH * s;
+      const finalX = baseX + tx + (sw - baseW)/2, finalY = baseY + ty;
+      ctx.save(); roundedRectPath(ctx,sx,sy,sw,sh,cornerRadius); ctx.clip();
       ctx.drawImage(img, finalX, finalY, finalW, finalH);
-
       // bottom fade
-      const grad = ctx.createLinearGradient(0, sy + sh * 0.6, 0, sy + sh);
+      const grad = ctx.createLinearGradient(0, sy + sh*0.6, 0, sy + sh);
       grad.addColorStop(0, 'rgba(255,255,255,0)');
       grad.addColorStop(1, 'rgba(255,255,255,1)');
       ctx.fillStyle = grad;
-      ctx.fillRect(sx, sy + sh * 0.6, sw, sh * 0.4);
-
+      ctx.fillRect(sx, sy + sh*0.6, sw, sh*0.4);
       ctx.restore();
-
-      // small ellipse shadow under card (soft)
-      ctx.save();
-      ctx.globalCompositeOperation = 'destination-over';
-      ctx.fillStyle = 'rgba(0,0,0,0.06)';
-      const ellipseW = sw * 0.9, ellipseH = 22;
-      const ellX = sx + (sw - ellipseW) / 2, ellY = sy + sh - 10;
-      ctx.beginPath();
-      ctx.ellipse(ellX + ellipseW/2, ellY + ellipseH/2, ellipseW/2, ellipseH/2, 0, 0, Math.PI*2);
-      ctx.fill();
-      ctx.restore();
+      // small ellipse shadow under card
+      ctx.save(); ctx.globalCompositeOperation='destination-over'; ctx.fillStyle='rgba(0,0,0,0.06)';
+      const eW = sw*0.9, eH = 22, eX = sx + (sw-eW)/2, eY = sy + sh - 10;
+      ctx.beginPath(); ctx.ellipse(eX+eW/2, eY+eH/2, eW/2, eH/2, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
     }
 
-    // draw info card (use on-screen position) - translucent
-    const infoEl = document.querySelector('.info');
-    const infoRect = infoEl.getBoundingClientRect();
-    const infoX = Math.round(infoRect.left - posterRect.left);
-    const infoY = Math.round(infoRect.top - posterRect.top);
-    const infoW = Math.round(infoRect.width);
-    const infoH = Math.round(infoRect.height);
+    // info card translucent (use on-screen position)
+    const infoEl = document.querySelector('.info'); const infoRect = infoEl.getBoundingClientRect();
+    const infoX = Math.round(infoRect.left - posterRect.left), infoY = Math.round(infoRect.top - posterRect.top);
+    const infoW = Math.round(infoRect.width), infoH = Math.round(infoRect.height);
+    ctx.save(); ctx.shadowColor='rgba(0,0,0,0.12)'; ctx.shadowBlur=20; ctx.shadowOffsetY=8;
+    ctx.fillStyle='rgba(255,255,255,0.5)'; roundedRectPath(ctx, infoX, infoY, infoW, infoH, 10); ctx.fill(); ctx.restore();
 
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.12)';
-    ctx.shadowBlur = 20;
-    ctx.shadowOffsetY = 8;
-    ctx.fillStyle = 'rgba(255,255,255,0.78)'; // translucent like CSS
-    roundedRectPath(ctx, infoX, infoY, infoW, infoH, 10);
-    ctx.fill();
-    ctx.restore();
-
-    // draw translucent rectangle behind title (so headline has translucent background in export)
-    const title = document.getElementById('title').innerText.trim();
-    const subtitle = document.getElementById('sub').innerText.trim();
+    // translucent title box (match CSS)
     const leftMargin = 40;
     const titleMaxWidth = Math.max(100, sx - leftMargin - 24);
-    const titleBoxHeight = 110;
-    const titleBoxX = leftMargin - 12;
-    const titleBoxY = 22;
-    const titleBoxW = titleMaxWidth + 24;
+    const titleBoxX = leftMargin - 12, titleBoxY = 22, titleBoxW = titleMaxWidth + 24, titleBoxH = 110;
+    ctx.save(); ctx.fillStyle='rgba(255,255,255,0.06)'; roundedRectPath(ctx, titleBoxX, titleBoxY, titleBoxW, titleBoxH, 12); ctx.fill(); ctx.restore();
 
-    ctx.save();
-    ctx.fillStyle = 'rgba(255,255,255,0.12)'; // translucent
-    roundedRectPath(ctx, titleBoxX, titleBoxY, titleBoxW, titleBoxHeight, 14);
-    ctx.fill();
-    ctx.restore();
-
-    // draw title with shadow
-    ctx.save();
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 64px system-ui';
-    ctx.shadowColor = 'rgba(0,0,0,0.45)';
-    ctx.shadowBlur = 12;
-    ctx.shadowOffsetY = 4;
-    wrapText(ctx, title, leftMargin, 90, titleMaxWidth, 72);
+    // draw title with shadow (one line)
+    const titleText = titleEl.innerText.trim();
+    ctx.save(); ctx.fillStyle='#fff'; ctx.font='bold 64px system-ui'; ctx.shadowColor='rgba(0,0,0,0.45)'; ctx.shadowBlur=12; ctx.shadowOffsetY=4;
+    wrapText(ctx, titleText, leftMargin, 90, titleMaxWidth, 72);
     ctx.restore();
 
     // subtitle
-    ctx.save();
-    ctx.fillStyle = 'rgba(255,255,255,0.95)';
-    ctx.font = '20px system-ui';
-    ctx.fillText(subtitle, leftMargin, 130, titleMaxWidth);
-    ctx.restore();
+    const subtitle = document.getElementById('sub').innerText.trim();
+    ctx.save(); ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.font='20px system-ui'; ctx.fillText(subtitle, leftMargin, 130, titleMaxWidth); ctx.restore();
 
-    // draw info text inside info card
-    ctx.save();
-    ctx.fillStyle = '#08314e';
-    ctx.font = 'bold 20px system-ui';
-    ctx.fillText(document.getElementById('tag').innerText.trim(), infoX + 20, infoY + 34);
-    ctx.font = '18px system-ui';
-    let yy = infoY + 34 + 28;
-    const bullets = Array.from(document.querySelectorAll('#bullets li')).map(li => li.innerText.trim());
-    for (const b of bullets) {
-      ctx.fillText('• ' + b, infoX + 20, yy, infoW - 40);
-      yy += 26;
-    }
+    // draw info text
+    ctx.save(); ctx.fillStyle='#08314e'; ctx.font='bold 20px system-ui'; ctx.fillText(document.getElementById('tag').innerText.trim(), infoX+20, infoY+34);
+    ctx.font='18px system-ui'; let yy = infoY + 34 + 28;
+    const bullets = Array.from(document.querySelectorAll('#bullets li')).map(li=>li.innerText.trim());
+    for(const b of bullets){ ctx.fillText('• ' + b, infoX+20, yy, infoW-40); yy += 26; }
     ctx.restore();
 
     // export
-    const link = document.createElement('a');
-    link.download = 'poster_export.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
+    const link = document.createElement('a'); link.download='poster_export.png'; link.href = canvas.toDataURL('image/png'); link.click();
 
-  } catch (err) {
-    console.error('Export error', err);
-    alert('Export failed: ' + err.message);
-  }
+  } catch(err){ console.error('Export error', err); alert('Export failed: ' + err.message); }
 });
 </script>
 </body>
-  </html>
+</html>
