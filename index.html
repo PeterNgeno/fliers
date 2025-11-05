@@ -441,6 +441,13 @@ async function removeBackgroundFromUserImage() {
 
 // Start loading model automatically
 setupBgRemoval();
+  // Ensure the button calls the function when clicked
+document.addEventListener('DOMContentLoaded', () => {
+  const removeBtn = document.getElementById('removeBgBtn');
+  if (removeBtn) {
+    removeBtn.addEventListener('click', removeBackgroundFromUserImage);
+  }
+});
 </script>
 </body>
 </html>
