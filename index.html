@@ -319,5 +319,127 @@ function loadImage(src) {
   });
 }
 </script>
+  <!-- Add these CDN scripts once (place before your scripts that call bodyPix) -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.0.5/dist/body-pix.js"></script>
+
+<script>
+/* Usage:
+ - call setupBgRemoval() once on page load to create the control and load the model.
+ - after a user uploads an image and userImage.src is set, call removeBackgroundFromUserImage().
+*/
+let bodyPixNet = null;
+let bgRemoving = false;
+
+async function setupBgRemoval() {
+  // Optionally show a small status UI or disable the button until loaded
+  console.log('Loading BodyPix model (may take a few seconds) ...');
+  try {
+    bodyPixNet = await bodyPix.load({
+      architecture: 'MobileNetV1', // smaller and faster; change to 'ResNet50' for accuracy if needed
+      outputStride: 16,
+      multiplier: 0.75,
+      quantBytes: 2
+    });
+    console.log('BodyPix loaded');
+    // enable remove button if you have one in DOM
+    const removeBtn = document.getElementById('removeBgBtn');
+    if (removeBtn) removeBtn.disabled = false;
+  } catch (err) {
+    console.error('Failed loading BodyPix:', err);
+    alert('Background removal model failed to load. Try reloading the page.');
+  }
+}
+
+// Call this after the userImage is set (i.e., after upload)
+async function removeBackgroundFromUserImage() {
+  if (!bodyPixNet) {
+    alert('Model still loading — please wait a few seconds and try again.');
+    return;
+  }
+  if (bgRemoving) return; // prevent double clicks
+  const userImageEl = document.getElementById('userImage');
+  if (!userImageEl || !userImageEl.src) { alert('Upload a photo first'); return; }
+
+  bgRemoving = true;
+  const removeBtn = document.getElementById('removeBgBtn');
+  removeBtn && (removeBtn.innerText = 'Removing…', removeBtn.disabled = true);
+
+  try {
+    // Create an offscreen image element to ensure naturalWidth/naturalHeight are available
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = userImageEl.src;
+
+    await new Promise((res, rej) => {
+      img.onload = () => res();
+      img.onerror = e => rej(e);
+    });
+
+    // Run segmentation. tune parameters for speed/quality:
+    // - internalResolution can be 'low' (faster) or 'high' (slower, more accurate)
+    const segmentation = await bodyPixNet.segmentPerson(img, {
+      flipHorizontal: false,
+      internalResolution: 'medium', // 'low' | 'medium' | 'high'
+      segmentationThreshold: 0.7,    // higher -> stricter person mask
+    });
+
+    // Create canvas same size as image
+    const w = img.naturalWidth;
+    const h = img.naturalHeight;
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = w;
+    outCanvas.height = h;
+    const outCtx = outCanvas.getContext('2d');
+
+    // Draw original image to canvas
+    outCtx.drawImage(img, 0, 0, w, h);
+
+    // Get image pixels and segmentation data
+    const imageData = outCtx.getImageData(0, 0, w, h);
+    const pix = imageData.data; // RGBA
+
+    // segmentation.data is a Uint8Array of 0/1 per pixel
+    const seg = segmentation.data;
+
+    // Iterate pixels and set alpha=0 for background
+    for (let i = 0, p = 0; i < seg.length; i++, p += 4) {
+      const isPerson = seg[i] === 1; // 1 means person
+      if (!isPerson) {
+        // set alpha to 0 (transparent) for background pixel
+        pix[p + 3] = 0;
+      } else {
+        // keep alpha as is (255)
+        pix[p + 3] = 255;
+      }
+    }
+
+    // Put the modified image back into canvas
+    outCtx.putImageData(imageData, 0, 0);
+
+    // (Optional) If you want to refine the mask (smooth edges), you can apply a slight blur or use bodyPix.toMask + drawMask with opacity,
+    // or postprocess segmentation (erosion/dilation) before applying alpha. This example uses direct mask.
+
+    // Convert to dataURL (PNG keeps transparency) and set into your user image
+    const dataUrl = outCanvas.toDataURL('image/png');
+    userImageEl.src = dataUrl;
+
+    // If your CSS relies on size, ensure the image is displayed (block) and placeholder hidden
+    userImageEl.style.display = 'block';
+    const placeholder = document.getElementById('placeholder');
+    if (placeholder) placeholder.style.display = 'none';
+
+  } catch (err) {
+    console.error('Background removal failed:', err);
+    alert('Background removal failed. See console for details.');
+  } finally {
+    bgRemoving = false;
+    if (removeBtn) { removeBtn.innerText = 'Remove BG'; removeBtn.disabled = false; }
+  }
+}
+
+// Start loading model automatically
+setupBgRemoval();
+</script>
 </body>
 </html>
