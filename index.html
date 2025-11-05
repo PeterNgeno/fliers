@@ -3,46 +3,59 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Poster editor — info below photo (fixed)</title>
+<title>Poster Editor — Final (Info near bottom)</title>
 <style>
-  :root{
+  :root {
     --poster-width: 800px;
     --poster-height: 1200px;
-    --slot-right: 60px;
-    --slot-top: 120px;
+    --slot-right: 70px;
+    --slot-top: 160px;
     --slot-width: 360px;
-    --slot-height: 820px;
+    --slot-height: 720px;
   }
-  *{box-sizing:border-box}
-  body{
-    display:flex;
-    justify-content:center;
-    padding:20px;
+  body {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    background: #f3f4f6;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-    background:#f3f4f6;
-    margin:0;
   }
-
   .poster-frame {
     width: var(--poster-width);
     height: var(--poster-height);
     position: relative;
-    border-radius: 10px;
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
     background: #fff;
   }
+
   .poster-frame .bg {
-    position:absolute;
-    left:0; top:0; width:100%; height:100%;
-    object-fit:cover;
-    object-position:center;
-    z-index:1;
-    pointer-events:none;
+    position: absolute;
+    inset: 0;
+    object-fit: cover;
+    z-index: 1;
+    pointer-events: none;
   }
 
-  /* photo-slot: sits visually to the right and underneath the content's headline,
-     but we will move the info card below so it doesn't overlap the image. */
+  .headline {
+    position: absolute;
+    top: 40px;
+    left: 40px;
+    z-index: 30;
+    color: #fff;
+    text-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
+  }
+  .headline h1 {
+    margin: 0;
+    font-size: 64px;
+  }
+  .headline p {
+    margin: 5px 0 0 0;
+    font-size: 22px;
+    color: rgba(255, 255, 255, 0.95);
+  }
+
   .photo-slot {
     position: absolute;
     right: var(--slot-right);
@@ -51,128 +64,125 @@
     height: var(--slot-height);
     border-radius: 18px;
     overflow: hidden;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.25);
-    z-index: 20;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02));
-    pointer-events: auto;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
   }
 
-  .photo-slot img.user {
-    width:100%;
-    height:100%;
-    object-fit:cover;
-    object-position:center;
-    display:block;
-    transform-origin:center;
+  .photo-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transform-origin: center;
     transition: transform 0.15s ease;
-    will-change: transform;
   }
-
-  .photo-slot::after{
-    content:"";
-    position:absolute; left:0; right:0; bottom:0;
-    height:32%;
-    pointer-events:none;
-    background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%);
-    opacity:0.85;
-  }
-
-  /* top text area (headline) */
-  .headline {
+  .photo-slot::after {
+    content: "";
     position: absolute;
-    left: 28px;
-    top: 28px;
-    z-index: 40;
-    color: #ffffff;
-    text-shadow: 0 4px 12px rgba(0,0,0,0.45);
-    pointer-events: auto;
+    inset: auto 0 0 0;
+    height: 30%;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 1));
+    opacity: 0.85;
+    pointer-events: none;
   }
-  .headline h1 { margin:0; font-size:64px; letter-spacing:.5px; }
-  .headline p { margin:8px 0 0 0; font-size:22px; color: rgba(255,255,255,0.95) }
 
-  /* INFO card moved to bottom-left area (below photo) so it never overlaps the photo */
+  /* Info box now sits near bottom margin */
   .info {
     position: absolute;
-    left: 28px;
-    /* place below the photo (slot bottom + margin). We'll compute: top = slot top + slot height - small overlap
-       but to keep it simple we place at a fixed bottom offset so it remains below on most screens */
-    bottom: 140px;
-    width: calc(100% - var(--slot-width) - var(--slot-right) - 80px); /* leaves space for right photo */
-    max-width: 480px;
-    background: rgba(255,255,255,0.94);
-    padding: 18px;
+    left: 40px;
+    bottom: 60px;
+    width: calc(100% - 100px);
+    max-width: 700px;
+    background: rgba(255, 255, 255, 0.92);
+    color: #0b3a61;
     border-radius: 10px;
-    color: #06314d;
-    box-shadow: 0 8px 26px rgba(7,22,45,0.08);
+    padding: 18px 22px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
     z-index: 40;
-    pointer-events: auto;
   }
-  .info h2{ margin:0 0 8px 0; font-size:20px; color:#0b3a61; }
-  .info ul{ margin:8px 0 0 18px; }
-  .info li{ margin:8px 0; line-height:1.35; }
+  .info h2 {
+    margin: 0 0 8px 0;
+    font-size: 20px;
+  }
+  .info ul {
+    margin: 5px 0 0 18px;
+    padding: 0;
+  }
+  .info li {
+    margin: 5px 0;
+    line-height: 1.35;
+  }
 
-  /* Controls area pinned bottom-left (file name shown) */
+  /* Upload and controls */
   .controls {
     position: absolute;
-    left: 18px;
-    bottom: 18px;
-    z-index: 60;
-    display:flex;
-    gap:8px;
-    align-items:center;
-    pointer-events: auto;
-    background: transparent;
+    bottom: 15px;
+    right: 20px;
+    z-index: 50;
+    display: flex;
+    gap: 6px;
   }
-  .controls .file-label { font-size:13px; color:#0b3a61; background:rgba(255,255,255,0.9); padding:6px 8px; border-radius:6px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
-  .controls input[type=file]{ display:none; }
-  .controls button{
-    background:#0a58ca;
-    color:white;
-    border:none;
-    padding:10px 12px;
-    border-radius:8px;
-    cursor:pointer;
-    font-weight:600;
-    box-shadow: 0 6px 18px rgba(10,88,202,0.18);
+  .controls input {
+    display: none;
   }
-  .zoom-btn { width:44px; height:44px; display:inline-flex; align-items:center; justify-content:center; font-size:20px; padding:0; }
-
-  /* small placeholder */
-  .photo-slot .placeholder{
-    color: rgba(0,0,0,0.45);
-    font-weight:700;
-    text-align:center;
-    padding:16px;
-    width:100%;
+  .controls label,
+  .controls button {
+    background: #0a58ca;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .controls .zoom-btn {
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
   }
 
-  @media (max-width:900px){
-    :root{ --poster-width:360px; --poster-height:640px; --slot-width:150px; --slot-height:300px; --slot-top:90px; --slot-right:22px;}
-    .headline h1{ font-size:36px; }
-    .info{ width: calc(100% - var(--slot-width) - var(--slot-right) - 60px); bottom:110px; }
+  @media (max-width: 900px) {
+    :root {
+      --poster-width: 360px;
+      --poster-height: 640px;
+      --slot-width: 150px;
+      --slot-height: 320px;
+      --slot-top: 90px;
+      --slot-right: 20px;
+    }
+    .headline h1 {
+      font-size: 36px;
+    }
+    .info {
+      width: calc(100% - 60px);
+      left: 30px;
+      bottom: 25px;
+    }
   }
 </style>
 </head>
 <body>
   <div class="poster-frame" id="poster">
-    <!-- Replace background.jpg with your cleaned poster background (man removed) -->
-    <img class="bg" id="bgImage" src="background.jpg" alt="Poster background">
+    <img src="background.jpg" alt="Poster background" class="bg" id="bgImage">
 
-    <div class="photo-slot" id="slot" title="Drop or click to upload image">
-      <img class="user" id="userImage" src="" alt="" style="display:none">
-      <div class="placeholder" id="placeholder">Drop or upload your photo here</div>
+    <div class="photo-slot" id="slot">
+      <img id="userImage" alt="Uploaded photo" style="display:none" />
+      <div id="placeholder" style="color:#555;font-weight:600;">Upload photo here</div>
     </div>
 
-    <div class="headline" >
+    <div class="headline">
       <h1 contenteditable="true" id="title">HAPPY</h1>
       <p contenteditable="true" id="sub">Birthday Christopher</p>
     </div>
 
-    <!-- INFO moved below (bottom-left) so it never blocks the photo -->
-    <div class="info" >
+    <div class="info">
       <h2 contenteditable="true" id="tag">A blessed day!</h2>
       <ul id="bullets">
         <li contenteditable="true">The Lord bless you and keep you</li>
@@ -181,187 +191,133 @@
       </ul>
     </div>
 
-    <div class="controls" id="controls">
-      <label for="fileInput" class="file-label" id="fileLabel">Choose photo</label>
-      <input id="fileInput" type="file" accept="image/*">
-      <div id="fileName" class="file-label" style="display:none"></div>
-      <button id="zoomOut" class="zoom-btn" title="Zoom out">−</button>
-      <button id="zoomIn" class="zoom-btn" title="Zoom in">+</button>
-      <button id="downloadBtn" title="Export PNG">Export</button>
+    <div class="controls">
+      <label for="fileInput">Choose Photo</label>
+      <input type="file" id="fileInput" accept="image/*" />
+      <button class="zoom-btn" id="zoomOut">−</button>
+      <button class="zoom-btn" id="zoomIn">+</button>
+      <button id="downloadBtn">Export</button>
     </div>
   </div>
 
 <script>
-  const fileInput = document.getElementById('fileInput');
-  const fileLabel = document.getElementById('fileLabel');
-  const fileNameEl = document.getElementById('fileName');
-  const userImage = document.getElementById('userImage');
-  const placeholder = document.getElementById('placeholder');
-  const slot = document.getElementById('slot');
+const fileInput = document.getElementById('fileInput');
+const userImage = document.getElementById('userImage');
+const placeholder = document.getElementById('placeholder');
+let scale = 1, translateX = 0, translateY = 0, dragging = false, startX = 0, startY = 0;
+
+// Upload and preview
+fileInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    userImage.src = ev.target.result;
+    userImage.style.display = 'block';
+    placeholder.style.display = 'none';
+    scale = 1; translateX = translateY = 0;
+    updateTransform();
+  };
+  reader.readAsDataURL(file);
+});
+
+function updateTransform() {
+  userImage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+}
+
+// Drag image
+const slot = document.getElementById('slot');
+slot.addEventListener('pointerdown', e => {
+  if (userImage.style.display === 'none') return;
+  dragging = true;
+  startX = e.clientX; startY = e.clientY;
+  slot.setPointerCapture(e.pointerId);
+});
+window.addEventListener('pointermove', e => {
+  if (!dragging) return;
+  translateX += e.clientX - startX;
+  translateY += e.clientY - startY;
+  startX = e.clientX; startY = e.clientY;
+  updateTransform();
+});
+window.addEventListener('pointerup', () => dragging = false);
+
+// Zoom
+document.getElementById('zoomIn').addEventListener('click', () => { scale = Math.min(3, scale + 0.1); updateTransform(); });
+document.getElementById('zoomOut').addEventListener('click', () => { scale = Math.max(0.5, scale - 0.1); updateTransform(); });
+
+// Export
+document.getElementById('downloadBtn').addEventListener('click', async () => {
   const poster = document.getElementById('poster');
-  let scale = 1, lastX = 0, lastY = 0, dragging = false, startX = 0, startY = 0;
+  const w = poster.clientWidth, h = poster.clientHeight;
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
 
-  // open file dialog when clicking label
-  fileLabel.addEventListener('click', ()=> fileInput.click());
+  // Draw background
+  const bg = await loadImage(document.getElementById('bgImage').src);
+  ctx.drawImage(bg, 0, 0, w, h);
 
-  fileInput.addEventListener('change', e=>{
-    const f = e.target.files && e.target.files[0];
-    if(!f) return;
-    fileNameEl.style.display = 'inline-block';
-    fileNameEl.textContent = f.name;
-    const reader = new FileReader();
-    reader.onload = ev=>{
-      userImage.src = ev.target.result;
-      userImage.style.display = 'block';
-      placeholder.style.display = 'none';
-      scale = 1; lastX = 0; lastY = 0;
-      userImage.style.transform = `translate(0px,0px) scale(${scale})`;
+  // Draw user image
+  if (userImage.src) {
+    const img = await loadImage(userImage.src);
+    const slotRect = slot.getBoundingClientRect();
+    const posterRect = poster.getBoundingClientRect();
+    const sx = slotRect.left - posterRect.left;
+    const sy = slotRect.top - posterRect.top;
+    const sw = slotRect.width;
+    const sh = slotRect.height;
+    const imgRatio = img.width / img.height;
+    const slotRatio = sw / sh;
+    let drawW, drawH, dx, dy;
+    if (imgRatio > slotRatio) {
+      drawH = sh;
+      drawW = img.width * (sh / img.height);
+      dx = sx - (drawW - sw) / 2;
+      dy = sy;
+    } else {
+      drawW = sw;
+      drawH = img.height * (sw / img.width);
+      dx = sx;
+      dy = sy - (drawH - sh) / 2;
     }
-    reader.readAsDataURL(f);
-  });
-
-  // drop support
-  slot.addEventListener('dragover', ev=>{ ev.preventDefault(); slot.style.opacity = 0.95; });
-  slot.addEventListener('dragleave', ev=>{ slot.style.opacity = 1; });
-  slot.addEventListener('drop', ev=>{ ev.preventDefault(); slot.style.opacity = 1;
-    const f = ev.dataTransfer.files && ev.dataTransfer.files[0];
-    if(!f) return;
-    fileNameEl.style.display = 'inline-block';
-    fileNameEl.textContent = f.name;
-    const reader = new FileReader();
-    reader.onload = e=>{ userImage.src = e.target.result; userImage.style.display='block'; placeholder.style.display='none'; scale=1; lastX=0; lastY=0; userImage.style.transform = `translate(0px,0px) scale(${scale})`; };
-    reader.readAsDataURL(f);
-  });
-
-  // zoom
-  document.getElementById('zoomIn').addEventListener('click', ()=>{
-    scale = Math.min(3.5, scale + 0.1);
-    userImage.style.transform = `translate(${lastX}px, ${lastY}px) scale(${scale})`;
-  });
-  document.getElementById('zoomOut').addEventListener('click', ()=>{
-    scale = Math.max(0.5, scale - 0.1);
-    userImage.style.transform = `translate(${lastX}px, ${lastY}px) scale(${scale})`;
-  });
-
-  // drag image inside slot
-  slot.addEventListener('pointerdown', ev=>{
-    if(userImage.style.display === 'none') return;
-    dragging = true;
-    startX = ev.clientX; startY = ev.clientY;
-    slot.setPointerCapture && slot.setPointerCapture(ev.pointerId);
-  });
-  window.addEventListener('pointermove', ev=>{
-    if(!dragging) return;
-    const dx = ev.clientX - startX;
-    const dy = ev.clientY - startY;
-    userImage.style.transform = `translate(${lastX + dx}px, ${lastY + dy}px) scale(${scale})`;
-  });
-  window.addEventListener('pointerup', ev=>{
-    if(!dragging) return;
-    const dx = ev.clientX - startX;
-    const dy = ev.clientY - startY;
-    lastX += dx; lastY += dy;
-    dragging = false;
-    slot.releasePointerCapture && slot.releasePointerCapture();
-  });
-
-  // export logic (draw bg + user image + text)
-  document.getElementById('downloadBtn').addEventListener('click', async ()=>{
-    try{
-      const w = poster.clientWidth; const h = poster.clientHeight;
-      const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-
-      // draw background
-      const bgImgEl = document.getElementById('bgImage');
-      if(bgImgEl && bgImgEl.src){
-        const bg = await loadImage(bgImgEl.src);
-        ctx.drawImage(bg, 0, 0, w, h);
-      } else { ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,w,h); }
-
-      // draw user image inside slot (considering transform)
-      if(userImage && userImage.src){
-        const img = await loadImage(userImage.src);
-        const slotRect = slot.getBoundingClientRect();
-        const posterRect = poster.getBoundingClientRect();
-        const sx = slotRect.left - posterRect.left;
-        const sy = slotRect.top - posterRect.top;
-        const sw = slotRect.width;
-        const sh = slotRect.height;
-
-        // read transform translate & scale if present
-        const transform = userImage.style.transform || '';
-        const match = transform.match(/translate\(([-0-9.]+)px,\s*([-0-9.]+)px\)\s*scale\(([-0-9.]+)\)/) ||
-                      transform.match(/translate\(([-0-9.]+)px,\s*([-0-9.]+)px\)\s*scale\(([-0-9.]+)\)/i);
-        if(match){
-          const tx = parseFloat(match[1]), ty = parseFloat(match[2]), s = parseFloat(match[3]);
-          // compute cover base scale
-          const imgRatio = img.width / img.height;
-          const slotRatio = sw / sh;
-          let baseScale;
-          if(imgRatio > slotRatio){
-            baseScale = sh / img.height;
-          } else {
-            baseScale = sw / img.width;
-          }
-          const finalScale = baseScale * s;
-          const drawW = img.width * finalScale;
-          const drawH = img.height * finalScale;
-          const dx = sx + (sw - drawW)/2 + tx;
-          const dy = sy + (sh - drawH)/2 + ty;
-          ctx.drawImage(img, dx, dy, drawW, drawH);
-        } else {
-          // fallback center-cover
-          const imgRatio = img.width / img.height;
-          const slotRatio = sw / sh;
-          let drawW, drawH, dx, dy;
-          if (imgRatio > slotRatio) {
-            drawH = sh; drawW = img.width * (sh / img.height); dx = sx - (drawW - sw)/2; dy = sy;
-          } else {
-            drawW = sw; drawH = img.height * (sw / img.width); dx = sx; dy = sy - (drawH - sh)/2;
-          }
-          ctx.drawImage(img, dx, dy, drawW, drawH);
-        }
-
-        // draw bottom fade over slot area
-        const grad = ctx.createLinearGradient(0, sy + sh*0.6, 0, sy + sh);
-        grad.addColorStop(0, 'rgba(255,255,255,0)');
-        grad.addColorStop(1, 'rgba(255,255,255,1)');
-        ctx.fillStyle = grad;
-        ctx.fillRect(sx, sy + sh*0.6, sw, sh*0.4);
-      }
-
-      // draw texts (simple)
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 64px system-ui';
-      ctx.fillText(document.getElementById('title').innerText.trim(), 40, 90);
-      ctx.font = '20px system-ui';
-      ctx.fillText(document.getElementById('sub').innerText.trim(), 40, 130);
-
-      // draw bullets from info area
-      ctx.fillStyle = '#08314e';
-      ctx.font = '18px system-ui';
-      const bullets = Array.from(document.querySelectorAll('#bullets li')).map(li=>li.innerText.trim());
-      let y = poster.clientHeight - 260; // approximate area where info sits
-      for(const b of bullets){
-        ctx.fillText('• ' + b, 40, y);
-        y += 28;
-      }
-
-      const a = document.createElement('a'); a.download = 'poster_export.png'; a.href = canvas.toDataURL('image/png'); a.click();
-
-    } catch(err){
-      alert('Export failed: ' + err.message + '\nMake sure background.jpg is accessible.');
-      console.error(err);
-    }
-  });
-
-  function loadImage(src){
-    return new Promise((res, rej)=>{
-      const i = new Image(); i.crossOrigin = 'anonymous';
-      i.onload = ()=>res(i); i.onerror = e=>rej(e); i.src = src;
-    });
+    ctx.drawImage(img, dx + translateX, dy + translateY, drawW * scale, drawH * scale);
   }
+
+  // Draw headline
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 64px system-ui";
+  ctx.fillText(document.getElementById('title').innerText, 40, 90);
+  ctx.font = "20px system-ui";
+  ctx.fillText(document.getElementById('sub').innerText, 40, 130);
+
+  // Draw info text
+  ctx.fillStyle = "#08314e";
+  ctx.font = "bold 20px system-ui";
+  let y = h - 110;
+  const bullets = Array.from(document.querySelectorAll('#bullets li')).map(li => li.innerText.trim());
+  ctx.fillText(document.getElementById('tag').innerText, 40, y - 25);
+  ctx.font = "18px system-ui";
+  bullets.forEach(b => {
+    ctx.fillText("• " + b, 40, y);
+    y += 25;
+  });
+
+  const link = document.createElement('a');
+  link.download = "poster_export.png";
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+});
+
+function loadImage(src) {
+  return new Promise((res, rej) => {
+    const i = new Image();
+    i.crossOrigin = "anonymous";
+    i.onload = () => res(i);
+    i.onerror = rej;
+    i.src = src;
+  });
+}
 </script>
 </body>
-  </html>
+</html>
