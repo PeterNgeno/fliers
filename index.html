@@ -3,13 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Poster Editor — controls just below flyer</title>
+<title>Poster Editor — round controls restored</title>
 <style>
   :root{
     --poster-width:800px; --poster-height:1200px;
     --slot-right:70px; --slot-top:160px; --slot-width:360px; --slot-height:720px;
     --left-margin:40px;
-    --control-gap:10px;
   }
   *{box-sizing:border-box}
   body{position:relative; display:flex;flex-direction:column;align-items:center;padding:24px;background:#f3f4f6;font-family:system-ui, -apple-system, "Segoe UI", Roboto, Arial;margin:0}
@@ -21,12 +20,10 @@
   .headline h1{margin:0;font-size:64px;line-height:0.95;white-space:nowrap; font-family:"Rogbold-3IIGM", system-ui, sans-serif;}
   .headline p{margin:8px 0 0 0;font-size:22px;color:rgba(255,255,255,.95);white-space:nowrap}
 
-  /* main rectangular photo */
   .photo-slot{position:absolute;right:var(--slot-right);top:var(--slot-top);width:var(--slot-width);height:var(--slot-height);border-radius:18px;overflow:hidden;box-shadow:0 8px 25px rgba(0,0,0,.28);z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.02);transition:height .18s ease}
   .photo-slot img{width:100%;height:100%;object-fit:cover;object-position:center;transform-origin:center;transition:transform .15s ease;display:block}
   .photo-slot::after{content:"";position:absolute;inset:auto 0 0 0;height:30%;background:linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%);opacity:.85;pointer-events:none}
 
-  /* round photo slot - two instances */
   .round-slot{
     position:absolute;
     left:0; top:0;
@@ -45,8 +42,9 @@
   .round-slot.active{display:flex; box-shadow:0 14px 30px rgba(0,0,0,.28);}
   .round-slot img.round-img{
     display:block;
-    width:160%;
-    height:160%;
+    /* slightly larger so faces aren't accidentally cropped */
+    width:150%;
+    height:150%;
     object-fit:cover;
     object-position:center center;
     transform-origin:center center;
@@ -74,12 +72,11 @@
   .info ul{margin:6px 0 0 18px;padding:0}
   .info li{margin:6px 0;line-height:1.35}
 
-  /* controls dock just below poster with small gap */
   .controls{
     width:100%;
-    margin-top:12px;               /* small gap — user requested "just below the margin bottom" */
+    margin-top:12px;
     display:flex;
-    gap:var(--control-gap);
+    gap:10px;
     align-items:flex-start;
     flex-wrap:wrap;
     justify-content:space-between;
@@ -88,7 +85,6 @@
     border-radius:8px;
     box-shadow:0 6px 18px rgba(0,0,0,0.06);
   }
-  /* left and right groups inside controls */
   .controls-left, .controls-center, .controls-right { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .controls-center { flex: 1 1 auto; justify-content:center; min-width:120px; }
   .controls input[type="file"]{display:none}
@@ -102,11 +98,7 @@
 
   .color-controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:6px 0; }
 
-  /* if there is too much content, allow horizontal scroll on small screens (keeps content available) */
   .controls { overflow-x:auto; -webkit-overflow-scrolling:touch; }
-  .controls::-webkit-scrollbar{height:8px}
-  .controls::-webkit-scrollbar-thumb{background:rgba(10,88,202,0.18);border-radius:6px}
-
   @media (max-width:900px){
     :root{--poster-width:360px;--poster-height:640px;--slot-width:150px;--slot-height:320px;--slot-top:90px;--slot-right:20px}
     .headline h1{font-size:36px}
@@ -152,7 +144,6 @@
       </div>
     </div>
 
-    <!-- CONTROLS: docked DIRECTLY below poster (small gap) -->
     <div class="controls" id="controls" role="toolbar" aria-label="Editor controls">
       <div class="controls-left">
         <label for="fileInput" style="cursor:pointer;">Choose Photo</label>
@@ -177,6 +168,8 @@
           <button id="r1ZoomIn" class="small">r1+</button>
           <button id="r1Up" class="small">↑</button>
           <button id="r1Down" class="small">↓</button>
+          <button id="r1Left" class="small">←</button>
+          <button id="r1Right" class="small">→</button>
         </div>
 
         <div style="display:flex; gap:8px; align-items:center; margin-left:8px;">
@@ -185,6 +178,8 @@
           <button id="r2ZoomIn" class="small">r2+</button>
           <button id="r2Up" class="small">↑</button>
           <button id="r2Down" class="small">↓</button>
+          <button id="r2Left" class="small">←</button>
+          <button id="r2Right" class="small">→</button>
         </div>
 
         <button id="editVerseBtn" class="small" style="margin-left:8px;">Edit Verse</button>
@@ -205,7 +200,7 @@
     </div>
   </div>
 
-<!-- BodyPix (kept) -->
+<!-- BodyPix -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.0.5/dist/body-pix.js"></script>
 
@@ -226,6 +221,8 @@ const r1ZoomIn = document.getElementById('r1ZoomIn');
 const r1ZoomOut = document.getElementById('r1ZoomOut');
 const r1Up = document.getElementById('r1Up');
 const r1Down = document.getElementById('r1Down');
+const r1Left = document.getElementById('r1Left');
+const r1Right = document.getElementById('r1Right');
 
 const roundSlot2 = document.getElementById('roundSlot2');
 const roundImage2 = document.getElementById('roundImage2');
@@ -235,6 +232,8 @@ const r2ZoomIn = document.getElementById('r2ZoomIn');
 const r2ZoomOut = document.getElementById('r2ZoomOut');
 const r2Up = document.getElementById('r2Up');
 const r2Down = document.getElementById('r2Down');
+const r2Left = document.getElementById('r2Left');
+const r2Right = document.getElementById('r2Right');
 
 const dateBadge = document.getElementById('dateBadge');
 const editVerseBtn = document.getElementById('editVerseBtn');
@@ -258,10 +257,10 @@ const downloadBtn = document.getElementById('downloadBtn');
 let scale = 1, translateX = 0, translateY = 0;
 let dragging = false, startX = 0, startY = 0;
 
-let r1Enabled = false, r1Scale = 1, r1Tx = 0, r1Ty = 0, r1Dragging = false, r1StartX = 0, r1StartY = 0;
-let r2Enabled = false, r2Scale = 1, r2Tx = 0, r2Ty = 0, r2Dragging = false, r2StartX = 0, r2StartY = 0;
+let r1Enabled = false, r1Scale = 1.05, r1Tx = 0, r1Ty = 0, r1Dragging = false, r1StartX = 0, r1StartY = 0;
+let r2Enabled = false, r2Scale = 1.05, r2Tx = 0, r2Ty = 0, r2Dragging = false, r2StartX = 0, r2StartY = 0;
 
-/* ---------- create background thumbnails ---------- */
+/* ---------- backgrounds ---------- */
 const bgFiles = [];
 for (let i=1;i<=10;i++){ bgFiles.push('bg'+i+'.jpg'); }
 bgFiles.forEach((f, idx) => {
@@ -286,8 +285,8 @@ fileInput.addEventListener('change', e=>{
     userImage.style.display = 'block';
     placeholder.style.display = 'none';
     scale = 1; translateX = translateY = 0; updateTransform();
-    if(r1Enabled && !roundImage1.src){ roundImage1.src = userImage.src; roundImage1.style.display='block'; roundFrame1.style.display='block'; }
-    if(r2Enabled && !roundImage2.src){ roundImage2.src = userImage.src; roundImage2.style.display='block'; roundFrame2.style.display='block'; }
+    if(r1Enabled && !roundImage1.src){ roundImage1.src = userImage.src; roundImage1.style.display='block'; roundFrame1.style.display='block'; r1Scale=1.05; r1Tx=r1Ty=0; updateRound1(); }
+    if(r2Enabled && !roundImage2.src){ roundImage2.src = userImage.src; roundImage2.style.display='block'; roundFrame2.style.display='block'; r2Scale=1.05; r2Tx=r2Ty=0; updateRound2(); }
   };
   r.readAsDataURL(f);
 });
@@ -314,14 +313,14 @@ mainDown && mainDown.addEventListener('click', ()=>{ translateY += 8; updateTran
 mainLeft && mainLeft.addEventListener('click', ()=>{ translateX -= 8; updateTransform(); });
 mainRight && mainRight.addEventListener('click', ()=>{ translateX += 8; updateTransform(); });
 
-/* ---------- arrange round slots to the LEFT with reasonable spacing ---------- */
+/* ---------- arrange round slots to the LEFT with small overlap ---------- */
 function arrangeRoundSlots() {
   const slotRect = slot.getBoundingClientRect();
   const posterRect = poster.getBoundingClientRect();
   const rW = roundSlot1.offsetWidth || 140;
   const rH = roundSlot1.offsetHeight || 140;
 
-  const gap = 16;
+  const gap = 18;
   const leftOfSlot = slotRect.left - posterRect.left - rW - gap;
   const safeLeft = Math.max(8, leftOfSlot);
 
@@ -330,8 +329,9 @@ function arrangeRoundSlots() {
   roundSlot1.style.top = r1Top + 'px';
   roundSlot1.style.zIndex = 56;
 
-  const r2Top = r1Top + Math.round(rH * 0.62);
-  const r2Left = safeLeft + Math.round(rW * 0.28);
+  // smaller overlap: r2 is lower and shifted right further
+  const r2Top = r1Top + Math.round(rH * 0.9); // closer to full height so little overlap
+  const r2Left = safeLeft + Math.round(rW * 0.6); // shifted more to the right
   roundSlot2.style.left = r2Left + 'px';
   roundSlot2.style.top = r2Top + 'px';
   roundSlot2.style.zIndex = 54;
@@ -344,7 +344,6 @@ function arrangeRoundSlots() {
   dateBadge.style.display = (r1Enabled || r2Enabled) ? 'block' : 'none';
   dateBadge.style.zIndex = 53;
 
-  // ensure inside poster
   const ensureInside = (el) => {
     const r = el.getBoundingClientRect();
     const left = r.left - posterRect.left;
@@ -359,15 +358,15 @@ function arrangeRoundSlots() {
   ensureInside(dateBadge);
 }
 
-/* ---------- Round1 behaviors ---------- */
+/* ---------- Round1 ---------- */
 addRound1.addEventListener('click', ()=>{
   r1Enabled = !r1Enabled;
   if(r1Enabled){
     roundSlot1.classList.add('active'); addRound1.innerText='Remove R1';
     roundFrame1.style.display='block';
     roundSlot1.style.display='flex';
-    if(!roundImage1.src && userImage.src){ roundImage1.src = userImage.src; roundImage1.style.display='block'; r1Scale=1; r1Tx=r1Ty=0; updateRound1(); }
-    try{ roundSlot1.style.background = document.getElementById('r1Color')?.value || 'transparent'; }catch(e){}
+    if(!roundImage1.src && userImage.src){ roundImage1.src = userImage.src; roundImage1.style.display='block'; roundFrame1.style.display='block'; }
+    r1Scale = 1.05; r1Tx = r1Ty = 0; updateRound1();
   } else {
     roundSlot1.classList.remove('active'); addRound1.innerText='Add R1';
     roundImage1.style.display='none'; roundFrame1.style.display='none'; roundSlot1.style.display='none';
@@ -378,7 +377,11 @@ r1ZoomIn.addEventListener('click', ()=>{ r1Scale = Math.min(5, r1Scale + 0.08); 
 r1ZoomOut.addEventListener('click', ()=>{ r1Scale = Math.max(0.3, r1Scale - 0.08); updateRound1(); });
 r1Up.addEventListener('click', ()=>{ r1Ty -= 6; updateRound1(); });
 r1Down.addEventListener('click', ()=>{ r1Ty += 6; updateRound1(); });
+r1Left.addEventListener('click', ()=>{ r1Tx -= 6; updateRound1(); });
+r1Right.addEventListener('click', ()=>{ r1Tx += 6; updateRound1(); });
+function updateRound1(){ roundImage1.style.transform = `translate(${r1Tx}px, ${r1Ty}px) scale(${r1Scale})`; }
 
+/* pointer drag moves inner image */
 roundSlot1.addEventListener('pointerdown', e=>{
   if (roundImage1.style.display === 'none') return;
   r1Dragging = true; r1StartX = e.clientX; r1StartY = e.clientY;
@@ -386,20 +389,19 @@ roundSlot1.addEventListener('pointerdown', e=>{
   roundSlot1.style.cursor = 'grabbing';
 });
 window.addEventListener('pointermove', e=>{
-  if(r1Dragging){ r1Tx += e.clientX - r1StartX; r1Ty += e.clientY - r1StartY; r1StartX = e.clientX; r1StartY = e.clientY; updateRound1(); arrangeRoundSlots(); }
+  if(r1Dragging){ r1Tx += e.clientX - r1StartX; r1Ty += e.clientY - r1StartY; r1StartX = e.clientX; r1StartY = e.clientY; updateRound1(); }
 });
 window.addEventListener('pointerup', ()=>{ r1Dragging=false; roundSlot1.style.cursor='grab'; });
-function updateRound1(){ roundImage1.style.transform = `translate(${r1Tx}px, ${r1Ty}px) scale(${r1Scale})`; }
 
-/* ---------- Round2 behaviors ---------- */
+/* ---------- Round2 ---------- */
 addRound2.addEventListener('click', ()=>{
   r2Enabled = !r2Enabled;
   if(r2Enabled){
     roundSlot2.classList.add('active'); addRound2.innerText='Remove R2';
     roundFrame2.style.display='block';
     roundSlot2.style.display='flex';
-    if(!roundImage2.src && userImage.src){ roundImage2.src = userImage.src; roundImage2.style.display='block'; r2Scale=1; r2Tx=r2Ty=0; updateRound2(); }
-    try{ roundSlot2.style.background = document.getElementById('r2Color')?.value || 'transparent'; }catch(e){}
+    if(!roundImage2.src && userImage.src){ roundImage2.src = userImage.src; roundImage2.style.display='block'; roundFrame2.style.display='block'; }
+    r2Scale = 1.05; r2Tx = r2Ty = 0; updateRound2();
   } else {
     roundSlot2.classList.remove('active'); addRound2.innerText='Add R2';
     roundImage2.style.display='none'; roundFrame2.style.display='none'; roundSlot2.style.display='none';
@@ -410,6 +412,9 @@ r2ZoomIn.addEventListener('click', ()=>{ r2Scale = Math.min(5, r2Scale + 0.08); 
 r2ZoomOut.addEventListener('click', ()=>{ r2Scale = Math.max(0.3, r2Scale - 0.08); updateRound2(); });
 r2Up.addEventListener('click', ()=>{ r2Ty -= 6; updateRound2(); });
 r2Down.addEventListener('click', ()=>{ r2Ty += 6; updateRound2(); });
+r2Left.addEventListener('click', ()=>{ r2Tx -= 6; updateRound2(); });
+r2Right.addEventListener('click', ()=>{ r2Tx += 6; updateRound2(); });
+function updateRound2(){ roundImage2.style.transform = `translate(${r2Tx}px, ${r2Ty}px) scale(${r2Scale})`; }
 
 roundSlot2.addEventListener('pointerdown', e=>{
   if (roundImage2.style.display === 'none') return;
@@ -418,24 +423,41 @@ roundSlot2.addEventListener('pointerdown', e=>{
   roundSlot2.style.cursor = 'grabbing';
 });
 window.addEventListener('pointermove', e=>{
-  if(r2Dragging){ r2Tx += e.clientX - r2StartX; r2Ty += e.clientY - r2StartY; r2StartX = e.clientX; r2StartY = e.clientY; updateRound2(); arrangeRoundSlots(); }
+  if(r2Dragging){ r2Tx += e.clientX - r2StartX; r2Ty += e.clientY - r2StartY; r2StartX = e.clientX; r2StartY = e.clientY; updateRound2(); }
 });
 window.addEventListener('pointerup', ()=>{ r2Dragging=false; roundSlot2.style.cursor='grab'; });
-function updateRound2(){ roundImage2.style.transform = `translate(${r2Tx}px, ${r2Ty}px) scale(${r2Scale})`; }
 
-/* ---------- drag & drop upload to round slots ---------- */
+/* drag & drop upload to round slots — recenters the image on load to avoid odd trim */
 roundSlot1.addEventListener('drop', e=>{
   e.preventDefault();
   const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
   if(!f) return;
-  const r = new FileReader(); r.onload = ev=>{ roundImage1.src=ev.target.result; roundImage1.style.display='block'; roundFrame1.style.display='block'; r1Scale=1; r1Tx=r1Ty=0; updateRound1(); arrangeRoundSlots(); }; r.readAsDataURL(f);
+  const r = new FileReader();
+  r.onload = ev=>{
+    roundImage1.src = ev.target.result;
+    roundImage1.style.display='block';
+    roundFrame1.style.display='block';
+    // reset pan/zoom so image recenters inside circle
+    r1Scale = 1.05; r1Tx = 0; r1Ty = 0; updateRound1();
+    arrangeRoundSlots();
+  };
+  r.readAsDataURL(f);
 });
 roundSlot1.addEventListener('dragover', e=>e.preventDefault());
+
 roundSlot2.addEventListener('drop', e=>{
   e.preventDefault();
   const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
   if(!f) return;
-  const r = new FileReader(); r.onload = ev=>{ roundImage2.src=ev.target.result; roundImage2.style.display='block'; roundFrame2.style.display='block'; r2Scale=1; r2Tx=r2Ty=0; updateRound2(); arrangeRoundSlots(); }; r.readAsDataURL(f);
+  const r = new FileReader();
+  r.onload = ev=>{
+    roundImage2.src = ev.target.result;
+    roundImage2.style.display='block';
+    roundFrame2.style.display='block';
+    r2Scale = 1.05; r2Tx = 0; r2Ty = 0; updateRound2();
+    arrangeRoundSlots();
+  };
+  r.readAsDataURL(f);
 });
 roundSlot2.addEventListener('dragover', e=>e.preventDefault());
 
@@ -492,10 +514,10 @@ verseSave.addEventListener('click', ()=>{
   closeVerseEditor();
 });
 
-/* ---------- BodyPix background removal ---------- */
+/* ---------- BodyPix (kept) ---------- */
 let bodyPixNet = null, bgRemoving = false;
 async function enableRemoveButtonWhenReady(){ const btn = removeBgBtn; if (btn){ btn.disabled = false; btn.innerText = 'Remove BG'; } else setTimeout(enableRemoveButtonWhenReady,300); }
-async function setupBgRemoval(){ try{ bodyPixNet = await bodyPix.load({architecture:'MobileNetV1', outputStride:16, multiplier:0.75, quantBytes:2}); enableRemoveButtonWhenReady(); } catch(e){ console.error(e); /* fail silently */ } }
+async function setupBgRemoval(){ try{ bodyPixNet = await bodyPix.load({architecture:'MobileNetV1', outputStride:16, multiplier:0.75, quantBytes:2}); enableRemoveButtonWhenReady(); } catch(e){ console.error(e); } }
 async function removeBackgroundFromUserImage(){ if (!bodyPixNet){ alert('Model still loading'); return; } if (bgRemoving) return; const ui = userImage; if (!ui || !ui.src){ alert('Upload a photo first'); return; } bgRemoving = true; const btn = removeBgBtn; if(btn){ btn.innerText='Removing…'; btn.disabled=true; } try { const img = new Image(); img.crossOrigin='anonymous'; img.src = ui.src; await new Promise((r,rej)=>{ img.onload=r; img.onerror=rej; }); const seg = await bodyPixNet.segmentPerson(img, {flipHorizontal:false, internalResolution:'medium', segmentationThreshold:0.7}); const w = img.naturalWidth, h = img.naturalHeight; const out = document.createElement('canvas'); out.width=w; out.height=h; const ctx = out.getContext('2d'); ctx.drawImage(img,0,0,w,h); const imageData = ctx.getImageData(0,0,w,h); const pix = imageData.data; const s = seg.data; for (let i=0, p=0; i<s.length; i++, p+=4) { if (s[i]===1) pix[p+3]=255; else pix[p+3]=0; } ctx.putImageData(imageData, 0, 0); ui.src = out.toDataURL('image/png'); ui.style.display='block'; placeholder.style.display='none'; } catch(err){ console.error(err); alert('BG removal failed'); } finally { bgRemoving=false; if(btn){ btn.disabled=false; btn.innerText='Remove BG'; } } }
 document.addEventListener('DOMContentLoaded', ()=>{ if(removeBgBtn) removeBgBtn.addEventListener('click', removeBackgroundFromUserImage); setupBgRemoval(); });
 
@@ -508,8 +530,7 @@ tagColor && tagColor.addEventListener('input', ()=>{ document.querySelector('#ta
 window.addEventListener('resize', arrangeRoundSlots);
 document.addEventListener('DOMContentLoaded', ()=>{ arrangeRoundSlots(); titleColor && titleColor.dispatchEvent(new Event('input')); subColor && subColor.dispatchEvent(new Event('input')); tagColor && tagColor.dispatchEvent(new Event('input')); });
 
-/* ---------- Export (same as before) ---------- */
-/* Helper to load images for canvas drawing */
+/* ---------- Export (keeps previously used implementation) ---------- */
 function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.crossOrigin='anonymous'; i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
 function roundedRectPath(ctx,x,y,w,h,r){ const min=Math.min(w,h)/2; if(r>min) r=min; ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 function wrapText(ctx,text,x,y,maxWidth,lineH){ const words=text.split(' '); let line=''; for(let n=0;n<words.length;n++){ const test=line+words[n]+' '; const m=ctx.measureText(test); if(m.width>maxWidth && n>0){ ctx.fillText(line.trim(), x, y); line=words[n]+' '; y+=lineH; } else line=test; } if(line) ctx.fillText(line.trim(), x, y); return y; }
@@ -675,4 +696,4 @@ downloadBtn.addEventListener('click', async ()=>{
 });
 </script>
 </body>
-</html>
+  </html>
