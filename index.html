@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Poster Editor — Final (Info near bottom)</title>
+<title>Poster Editor — Translucent Text Backgrounds</title>
 <style>
   :root {
     --poster-width: 800px;
@@ -43,14 +43,19 @@
     pointer-events: none;
   }
 
+  /* Headline now has a translucent rounded background */
   .headline {
     position: absolute;
     top: 40px;
     left: var(--left-margin);
     z-index: 60; /* above photo */
     color: #fff;
-    text-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
-    max-width: calc(100% - var(--slot-width) - var(--slot-right) - 80px); /* prevent overlap with slot */
+    text-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
+    max-width: calc(100% - var(--slot-width) - var(--slot-right) - 80px);
+    background: rgba(255,255,255,0.12); /* translucent */
+    padding: 14px 18px;
+    border-radius: 14px;
+    backdrop-filter: blur(6px); /* soft blur behind text (modern browsers) */
   }
   .headline h1 {
     margin: 0;
@@ -99,19 +104,20 @@
     pointer-events: none;
   }
 
-  /* Info box now sits near bottom margin */
+  /* Info box translucent */
   .info {
     position: absolute;
     left: 40px;
     bottom: 60px;
     width: calc(100% - 100px);
     max-width: 700px;
-    background: rgba(255, 255, 255, 0.92);
+    background: rgba(255, 255, 255, 0.78); /* more translucent */
     color: #0b3a61;
     border-radius: 10px;
     padding: 18px 22px;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
     z-index: 60;
+    backdrop-filter: blur(3px);
   }
   .info h2 {
     margin: 0 0 8px 0;
@@ -499,7 +505,7 @@ document.getElementById('downloadBtn').addEventListener('click', async () => {
       ctx.restore();
     }
 
-    // draw info card (use on-screen position)
+    // draw info card (use on-screen position) - translucent
     const infoEl = document.querySelector('.info');
     const infoRect = infoEl.getBoundingClientRect();
     const infoX = Math.round(infoRect.left - posterRect.left);
@@ -511,17 +517,28 @@ document.getElementById('downloadBtn').addEventListener('click', async () => {
     ctx.shadowColor = 'rgba(0,0,0,0.12)';
     ctx.shadowBlur = 20;
     ctx.shadowOffsetY = 8;
-    ctx.fillStyle = 'rgba(255,255,255,0.96)';
+    ctx.fillStyle = 'rgba(255,255,255,0.78)'; // translucent like CSS
     roundedRectPath(ctx, infoX, infoY, infoW, infoH, 10);
     ctx.fill();
     ctx.restore();
 
-    // draw title constrained so it doesn't overlap the photo slot
+    // draw translucent rectangle behind title (so headline has translucent background in export)
     const title = document.getElementById('title').innerText.trim();
     const subtitle = document.getElementById('sub').innerText.trim();
     const leftMargin = 40;
     const titleMaxWidth = Math.max(100, sx - leftMargin - 24);
+    const titleBoxHeight = 110;
+    const titleBoxX = leftMargin - 12;
+    const titleBoxY = 22;
+    const titleBoxW = titleMaxWidth + 24;
 
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.12)'; // translucent
+    roundedRectPath(ctx, titleBoxX, titleBoxY, titleBoxW, titleBoxHeight, 14);
+    ctx.fill();
+    ctx.restore();
+
+    // draw title with shadow
     ctx.save();
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 64px system-ui';
@@ -531,6 +548,7 @@ document.getElementById('downloadBtn').addEventListener('click', async () => {
     wrapText(ctx, title, leftMargin, 90, titleMaxWidth, 72);
     ctx.restore();
 
+    // subtitle
     ctx.save();
     ctx.fillStyle = 'rgba(255,255,255,0.95)';
     ctx.font = '20px system-ui';
@@ -564,4 +582,4 @@ document.getElementById('downloadBtn').addEventListener('click', async () => {
 });
 </script>
 </body>
-</html>
+  </html>
