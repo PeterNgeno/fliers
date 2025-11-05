@@ -3,152 +3,62 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Poster Editor — Title Fit + Semi-Transparent Backgrounds + Round Frame</title>
+<title>Poster Editor — with movable round photo</title>
 <style>
-  :root {
-    --poster-width: 800px;
-    --poster-height: 1200px;
-    --slot-right: 70px;
-    --slot-top: 160px;
-    --slot-width: 360px;
-    --slot-height: 720px;
-    --left-margin: 40px;
+  :root{
+    --poster-width:800px; --poster-height:1200px;
+    --slot-right:70px; --slot-top:160px; --slot-width:360px; --slot-height:720px;
+    --left-margin:40px;
   }
-  * { box-sizing: border-box; }
-  body {
-    display: flex;
-    justify-content: center;
-    padding: 20px;
-    background: #f3f4f6;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-    margin: 0;
-  }
-  .poster-frame {
-    width: var(--poster-width);
-    height: var(--poster-height);
-    position: relative;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-    background: #fff;
-  }
-  .poster-frame .bg {
-    position: absolute;
-    inset: 0;
-    width:100%;
-    height:100%;
-    object-fit: cover;
-    z-index: 1;
-    pointer-events: none;
-  }
+  *{box-sizing:border-box}
+  body{display:flex;justify-content:center;padding:20px;background:#f3f4f6;font-family:system-ui, -apple-system, "Segoe UI", Roboto, Arial;margin:0}
+  .poster-frame{width:var(--poster-width);height:var(--poster-height);position:relative;border-radius:12px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.25);background:#fff}
+  .poster-frame .bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;pointer-events:none}
 
-  /* Headline container with translucent background */
-  .headline {
-    position: absolute;
-    top: 40px;
-    left: var(--left-margin);
-    z-index: 60;
-    color: #fff;
-    text-shadow: 0 3px 10px rgba(0,0,0,0.45);
-    max-width: calc(100% - var(--slot-width) - var(--slot-right) - 80px);
-    background: rgba(255,255,255,0.06); /* near transparent */
-    padding: 12px 16px;
-    border-radius: 12px;
-    backdrop-filter: blur(6px);
-    display: inline-block;
-  }
+  .headline{position:absolute;top:40px;left:var(--left-margin);z-index:60;color:#fff;text-shadow:0 3px 10px rgba(0,0,0,.45);max-width:calc(100% - var(--slot-width) - var(--slot-right) - 120px);background:rgba(255,255,255,0.06);padding:12px 16px;border-radius:12px;backdrop-filter:blur(6px);display:inline-block}
+  .headline h1{margin:0;font-size:64px;line-height:0.95;white-space:nowrap}
+  .headline p{margin:8px 0 0 0;font-size:22px;color:rgba(255,255,255,.95);white-space:nowrap}
 
-  /* Title: prevent wrapping and let JS shrink to fit */
-  .headline h1 {
-    margin: 0;
-    font-size: 64px; /* starting size - will be adjusted by JS */
-    line-height: 0.95;
-    white-space: nowrap; /* important: prevent vertical stacking */
-    overflow: visible;
-  }
-  .headline p {
-    margin: 8px 0 0 0;
-    font-size: 22px;
-    color: rgba(255,255,255,0.95);
-    white-space: nowrap; /* keep subtitle on one line too */
-  }
+  /* main rectangular photo */
+  .photo-slot{position:absolute;right:var(--slot-right);top:var(--slot-top);width:var(--slot-width);height:var(--slot-height);border-radius:18px;overflow:hidden;box-shadow:0 8px 25px rgba(0,0,0,.28);z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.02);transition:height .18s ease}
+  .photo-slot img{width:100%;height:100%;object-fit:cover;object-position:center;transform-origin:center;transition:transform .15s ease;display:block}
+  .photo-slot::after{content:"";position:absolute;inset:auto 0 0 0;height:30%;background:linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%);opacity:.85;pointer-events:none}
 
-  .photo-slot {
-    position: absolute;
-    right: var(--slot-right);
-    top: var(--slot-top);
-    width: var(--slot-width);
-    height: var(--slot-height);
-    border-radius: 18px;
-    overflow: hidden;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.28);
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255,255,255,0.02);
-    transition: height 200ms ease, width 200ms ease, border-radius 200ms ease;
-  }
+  /* round photo (placed slightly left of main slot). By default hidden until added */
+  .round-slot{position:absolute; right: calc(var(--slot-right) + var(--slot-width) + 10px); top: calc(var(--slot-top) + 40px); width:140px; height:140px; border-radius:50%; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,.28); z-index:55; display:none; align-items:center; justify-content:center; background:transparent; cursor:grab; transition:width .12s,height .12s, right .12s, top .12s}
+  .round-slot.active{display:flex}
+  .round-slot img{display:block; width:120%; height:120%; object-fit:cover; transform-origin:center; transition:transform .12s ease}
+  .round-slot .frame-overlay{position:absolute; inset:0; pointer-events:none; width:100%; height:100%; object-fit:contain}
 
-  .photo-slot img { width:100%; height:100%; object-fit:cover; object-position:center; transform-origin:center; transition: transform .15s ease; display:block; }
-  .photo-slot::after { content:""; position:absolute; inset:auto 0 0 0; height:30%; background:linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%); opacity:0.85; pointer-events:none; }
+  .info{position:absolute;left:40px;bottom:60px;width:calc(100% - 100px);max-width:700px;background:rgba(255,255,255,.5);color:#0b3a61;border-radius:10px;padding:16px 20px;box-shadow:0 8px 25px rgba(0,0,0,.10);z-index:60;backdrop-filter:blur(3px)}
+  .info h2{margin:0 0 8px 0;font-size:20px}
+  .info ul{margin:6px 0 0 18px;padding:0}
+  .info li{margin:6px 0;line-height:1.35}
 
-  /* Round mode preview (makes the slot square and circular) */
-  .photo-slot.round-mode {
-    border-radius: 50%;
-    height: var(--slot-width); /* make square */
-    width: var(--slot-width);
-    overflow: hidden;
-  }
-  .photo-slot.round-mode img {
-    width:120%;
-    height:120%;
-    object-fit:cover;
-    object-position:center;
-  }
+  .controls{position:absolute;bottom:15px;right:20px;z-index:80;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .controls input{display:none}
+  .controls label,.controls button{background:#0a58ca;color:#fff;border:none;border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:600}
+  .zoom-btn{width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:20px}
 
-  /* Info box translucent (more transparent than before) */
-  .info {
-    position: absolute;
-    left: 40px;
-    bottom: 60px;
-    width: calc(100% - 100px);
-    max-width: 700px;
-    background: rgba(255,255,255,0.5); /* semi-transparent */
-    color: #0b3a61;
-    border-radius: 10px;
-    padding: 16px 20px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.10);
-    z-index: 60;
-    backdrop-filter: blur(3px);
-  }
-  .info h2 { margin:0 0 8px 0; font-size:20px; }
-  .info ul { margin:6px 0 0 18px; padding:0; }
-  .info li { margin:6px 0; line-height:1.35; }
-
-  /* Controls */
-  .controls { position:absolute; bottom:15px; right:20px; z-index:70; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  .controls input{ display:none; }
-  .controls label, .controls button { background:#0a58ca; color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer; font-weight:600; }
-  .controls label { display:inline-block; }
-  .zoom-btn { width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:20px; }
-
-  #placeholder{ color:#555; font-weight:600; text-align:center; padding:8px; }
-
-  @media (max-width:900px){
-    :root { --poster-width:360px; --poster-height:640px; --slot-width:150px; --slot-height:320px; --slot-top:90px; --slot-right:20px; }
-    .headline h1{ font-size:36px; }
-    .info { width: calc(100% - 60px); left:30px; bottom:25px; }
-  }
+  #placeholder{color:#555;font-weight:600;text-align:center;padding:8px}
+  @media (max-width:900px){:root{--poster-width:360px;--poster-height:640px;--slot-width:150px;--slot-height:320px;--slot-top:90px;--slot-right:20px} .headline h1{font-size:36px} .info{width:calc(100% - 60px);left:30px;bottom:25px}}
 </style>
 </head>
 <body>
   <div class="poster-frame" id="poster">
-    <img src="IMG-20251105-WA0012.jpg" alt="Poster background" class="bg" id="bgImage">
+    <img id="bgImage" class="bg" src="IMG-20251105-WA0012.jpg" alt="Poster background">
 
+    <!-- main rectangular photo -->
     <div class="photo-slot" id="slot">
       <img id="userImage" alt="Uploaded photo" style="display:none" />
       <div id="placeholder">Upload photo here</div>
+    </div>
+
+    <!-- round photo slot (hidden until user adds) -->
+    <div class="round-slot" id="roundSlot" title="Drag to reposition round image">
+      <img id="roundImage" alt="Round uploaded photo" style="display:none" />
+      <!-- This overlay will show the frame graphic -->
+      <img id="roundFrameOverlay" class="frame-overlay" alt="Frame overlay" src="BackgroundEraser_20251105_163946020.png" style="display:none" />
     </div>
 
     <div class="headline" id="headlineBox">
@@ -167,13 +77,17 @@
 
     <div class="controls">
       <label for="fileInput" style="cursor:pointer;">Choose Photo</label>
-      <input type="file" id="fileInput" accept="image/*" />
+      <input id="fileInput" type="file" accept="image/*" />
+
       <button id="removeBgBtn" disabled>Remove BG</button>
+
       <button class="zoom-btn" id="zoomOut">−</button>
       <button class="zoom-btn" id="zoomIn">+</button>
 
-      <!-- NEW: round/frame toggle -->
-      <button id="toggleRoundBtn" title="Toggle round frame">Round</button>
+      <!-- round controls -->
+      <button id="addRoundBtn" title="Add/Remove round photo">Add Round</button>
+      <button id="roundZoomOut" title="Round zoom out">R−</button>
+      <button id="roundZoomIn" title="Round zoom in">R+</button>
 
       <button id="downloadBtn">Export</button>
     </div>
@@ -184,255 +98,314 @@
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.0.5/dist/body-pix.js"></script>
 
 <script>
-/* ----------------- UI: upload / move / zoom ----------------- */
+/* ---------- Elements ---------- */
 const fileInput = document.getElementById('fileInput');
 const userImage = document.getElementById('userImage');
 const placeholder = document.getElementById('placeholder');
 const slot = document.getElementById('slot');
 const poster = document.getElementById('poster');
 const titleEl = document.getElementById('title');
-const toggleRoundBtn = document.getElementById('toggleRoundBtn');
-let scale = 1, translateX = 0, translateY = 0, dragging = false, startX = 0, startY = 0;
 
-// round mode flag
-let roundMode = false;
+const roundSlot = document.getElementById('roundSlot');
+const roundImage = document.getElementById('roundImage');
+const roundFrameOverlay = document.getElementById('roundFrameOverlay');
 
+const addRoundBtn = document.getElementById('addRoundBtn');
+const roundZoomIn = document.getElementById('roundZoomIn');
+const roundZoomOut = document.getElementById('roundZoomOut');
+
+let scale = 1, translateX = 0, translateY = 0; // main image transform
+let dragging = false, startX = 0, startY = 0;
+
+let roundEnabled = false;
+let rScale = 1, rTx = 0, rTy = 0;
+let rDragging = false, rStartX = 0, rStartY = 0;
+
+/* ---------- Upload main image ---------- */
 fileInput.addEventListener('change', e=>{
   const f = e.target.files && e.target.files[0]; if(!f) return;
   const r = new FileReader();
-  r.onload = ev => { userImage.src = ev.target.result; userImage.style.display='block'; placeholder.style.display='none'; scale=1; translateX=translateY=0; updateTransform(); }
+  r.onload = ev => {
+    userImage.src = ev.target.result;
+    userImage.style.display = 'block';
+    placeholder.style.display = 'none';
+    scale = 1; translateX = translateY = 0; updateTransform();
+  };
   r.readAsDataURL(f);
 });
-slot.addEventListener('dragover', e=>{ e.preventDefault(); slot.style.opacity=0.98; });
-slot.addEventListener('dragleave', e=>{ slot.style.opacity=1; });
-slot.addEventListener('drop', e=>{ e.preventDefault(); slot.style.opacity=1; const f = e.dataTransfer.files && e.dataTransfer.files[0]; if(!f) return; const r = new FileReader(); r.onload = ev => { userImage.src = ev.target.result; userImage.style.display='block'; placeholder.style.display='none'; scale=1; translateX=translateY=0; updateTransform(); }; r.readAsDataURL(f); });
 
+/* ---------- main image drag/zoom ---------- */
+slot.addEventListener('pointerdown', e=> {
+  if (userImage.style.display === 'none') return;
+  dragging = true; startX = e.clientX; startY = e.clientY;
+  slot.setPointerCapture && slot.setPointerCapture(e.pointerId);
+});
+window.addEventListener('pointermove', e=> {
+  if(!dragging) return;
+  translateX += e.clientX - startX; translateY += e.clientY - startY;
+  startX = e.clientX; startY = e.clientY; updateTransform();
+});
+window.addEventListener('pointerup', ()=> dragging = false);
 function updateTransform(){ userImage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`; }
 
-slot.addEventListener('pointerdown', e=>{ if(userImage.style.display==='none') return; dragging=true; startX=e.clientX; startY=e.clientY; slot.setPointerCapture && slot.setPointerCapture(e.pointerId); });
-window.addEventListener('pointermove', e=>{ if(!dragging) return; translateX += e.clientX - startX; translateY += e.clientY - startY; startX = e.clientX; startY = e.clientY; updateTransform(); });
-window.addEventListener('pointerup', ()=> dragging=false);
-
+/* zoom main */
 document.getElementById('zoomIn').addEventListener('click', ()=>{ scale = Math.min(3.5, scale + 0.1); updateTransform(); });
 document.getElementById('zoomOut').addEventListener('click', ()=>{ scale = Math.max(0.5, scale - 0.1); updateTransform(); });
 
-/* ----------------- Round toggle (preview + adjust slot size) ----------------- */
-toggleRoundBtn.addEventListener('click', () => {
-  roundMode = !roundMode;
-  if (roundMode) {
-    slot.classList.add('round-mode');
-    toggleRoundBtn.innerText = 'Round ✓';
-    // ensure slot height matches width (square)
-    const w = slot.getBoundingClientRect().width;
-    slot.style.height = `${Math.round(w)}px`;
+/* ---------- Round image handling ---------- */
+/* Add or remove visible round slot. The round image is independent (you can drag/zoom it). */
+addRoundBtn.addEventListener('click', ()=>{
+  roundEnabled = !roundEnabled;
+  if (roundEnabled) {
+    roundSlot.classList.add('active');
+    addRoundBtn.innerText = 'Remove Round';
+    // show overlay frame if available
+    roundFrameOverlay.style.display = 'block';
+    // ensure round image has some default content: copy main if exists
+    if (!roundImage.src && userImage.src) {
+      roundImage.src = userImage.src;
+      roundImage.style.display = 'block';
+      rScale = 1; rTx = rTy = 0; updateRoundTransform();
+    }
   } else {
-    slot.classList.remove('round-mode');
-    toggleRoundBtn.innerText = 'Round';
-    slot.style.height = ''; // let CSS control height again
+    roundSlot.classList.remove('active');
+    addRoundBtn.innerText = 'Add Round';
+    roundImage.style.display = 'none';
+    roundFrameOverlay.style.display = 'none';
   }
 });
 
-/* ----------------- Title auto-fit: prevent vertical stacking ----------------- */
-function fitTitleToOneLine() {
+/* round image upload by dragging main file onto round slot (or you can use the main upload and copy) */
+roundSlot.addEventListener('drop', e=>{
+  e.preventDefault();
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => { roundImage.src = ev.target.result; roundImage.style.display='block'; roundFrameOverlay.style.display='block'; rScale=1; rTx=rTy=0; updateRoundTransform(); };
+  r.readAsDataURL(f);
+});
+roundSlot.addEventListener('dragover', e=>{ e.preventDefault(); });
+
+/* drag move inside round slot adjusts rTx/rTy */
+roundSlot.addEventListener('pointerdown', e=>{
+  // allow dragging of inner image only when image present
+  if (roundImage.style.display === 'none') return;
+  rDragging = true; rStartX = e.clientX; rStartY = e.clientY;
+  roundSlot.setPointerCapture && roundSlot.setPointerCapture(e.pointerId);
+  roundSlot.style.cursor = 'grabbing';
+});
+window.addEventListener('pointermove', e=>{
+  if (!rDragging) return;
+  rTx += e.clientX - rStartX;
+  rTy += e.clientY - rStartY;
+  rStartX = e.clientX; rStartY = e.clientY;
+  updateRoundTransform();
+});
+window.addEventListener('pointerup', ()=>{ rDragging = false; roundSlot.style.cursor = 'grab'; });
+
+function updateRoundTransform(){
+  roundImage.style.transform = `translate(${rTx}px, ${rTy}px) scale(${rScale})`;
+  // optionally move frame overlay slightly if needed (frame is overlayed full size so no transform)
+}
+
+/* round zoom buttons */
+roundZoomIn.addEventListener('click', ()=>{ rScale = Math.min(5, rScale + 0.08); updateRoundTransform(); });
+roundZoomOut.addEventListener('click', ()=>{ rScale = Math.max(0.3, rScale - 0.08); updateRoundTransform(); });
+
+/* ---------- Title auto-fit ---------- */
+function fitTitleToOneLine(){
   const container = document.querySelector('.headline');
-  const maxWidth = container.clientWidth - 28; // padding buffer
-  let fontSize = 64; // start size
+  const maxWidth = container.clientWidth - 28;
+  let fontSize = 64;
   titleEl.style.fontSize = fontSize + 'px';
-  // decrease until it fits on one line or reaches min size
-  while (titleEl.scrollWidth > maxWidth && fontSize > 28) {
-    fontSize -= 2;
-    titleEl.style.fontSize = fontSize + 'px';
-  }
+  while (titleEl.scrollWidth > maxWidth && fontSize > 28) { fontSize -= 2; titleEl.style.fontSize = fontSize + 'px'; }
 }
-titleEl.addEventListener('input', ()=> { fitTitleToOneLine(); });
-window.addEventListener('resize', ()=> { fitTitleToOneLine(); });
+titleEl.addEventListener('input', fitTitleToOneLine);
+window.addEventListener('resize', fitTitleToOneLine);
+document.addEventListener('DOMContentLoaded', fitTitleToOneLine);
 
-/* run at load */
-document.addEventListener('DOMContentLoaded', ()=>{ fitTitleToOneLine(); });
-
-/* ----------------- BodyPix background removal ----------------- */
+/* ---------- BodyPix background removal (main image) ---------- */
 let bodyPixNet = null, bgRemoving = false;
-async function enableRemoveButtonWhenReady(){
-  const btn = document.getElementById('removeBgBtn');
-  if (btn) { btn.disabled = false; btn.innerText = 'Remove BG'; } else setTimeout(enableRemoveButtonWhenReady, 300);
-}
-async function setupBgRemoval(){
-  try {
-    bodyPixNet = await bodyPix.load({ architecture:'MobileNetV1', outputStride:16, multiplier:0.75, quantBytes:2 });
-    enableRemoveButtonWhenReady();
-  } catch(e){ console.error('BodyPix load failed', e); alert('BG model failed to load'); }
-}
+async function enableRemoveButtonWhenReady(){ const btn = document.getElementById('removeBgBtn'); if (btn){ btn.disabled = false; btn.innerText = 'Remove BG'; } else setTimeout(enableRemoveButtonWhenReady,300); }
+async function setupBgRemoval(){ try{ bodyPixNet = await bodyPix.load({architecture:'MobileNetV1', outputStride:16, multiplier:0.75, quantBytes:2}); enableRemoveButtonWhenReady(); } catch(e){ console.error(e); alert('BG model failed to load'); } }
 async function removeBackgroundFromUserImage(){
-  if(!bodyPixNet) { alert('Model still loading'); return; }
-  if(bgRemoving) return;
-  const ui = document.getElementById('userImage');
-  if(!ui || !ui.src) { alert('Upload a photo first'); return; }
+  if (!bodyPixNet){ alert('Model still loading'); return; }
+  if (bgRemoving) return;
+  const ui = userImage;
+  if (!ui || !ui.src){ alert('Upload a photo first'); return; }
   bgRemoving = true; const btn = document.getElementById('removeBgBtn'); if(btn){ btn.innerText='Removing…'; btn.disabled=true; }
   try {
     const img = new Image(); img.crossOrigin='anonymous'; img.src = ui.src; await new Promise((r,rej)=>{ img.onload=r; img.onerror=rej; });
-    const seg = await bodyPixNet.segmentPerson(img, { flipHorizontal:false, internalResolution:'medium', segmentationThreshold:0.7 });
+    const seg = await bodyPixNet.segmentPerson(img, {flipHorizontal:false, internalResolution:'medium', segmentationThreshold:0.7});
     const w = img.naturalWidth, h = img.naturalHeight;
-    const out = document.createElement('canvas'); out.width=w; out.height=h; const ctx = out.getContext('2d'); ctx.drawImage(img,0,0,w,h);
+    const out = document.createElement('canvas'); out.width=w; out.height=h; const ctx = out.getContext('2d');
+    ctx.drawImage(img,0,0,w,h);
     const imageData = ctx.getImageData(0,0,w,h); const pix = imageData.data; const s = seg.data;
-    for(let i=0,p=0;i<s.length;i++,p+=4){ if(s[i]===1) pix[p+3]=255; else pix[p+3]=0; }
-    ctx.putImageData(imageData,0,0); ui.src = out.toDataURL('image/png'); ui.style.display='block'; placeholder.style.display='none';
+    for (let i=0, p=0; i<s.length; i++, p+=4) { if (s[i]===1) pix[p+3]=255; else pix[p+3]=0; }
+    ctx.putImageData(imageData, 0, 0);
+    ui.src = out.toDataURL('image/png'); ui.style.display='block'; placeholder.style.display='none';
   } catch(err){ console.error(err); alert('BG removal failed'); }
   finally { bgRemoving=false; if(btn){ btn.disabled=false; btn.innerText='Remove BG'; } }
 }
 document.addEventListener('DOMContentLoaded', ()=>{ document.getElementById('removeBgBtn').addEventListener('click', removeBackgroundFromUserImage); setupBgRemoval(); });
 
-/* ----------------- Export: draw translucent boxes + photo card + text ----------------- */
-function roundedRectPath(ctx,x,y,w,h,r){ const min = Math.min(w,h)/2; if(r>min) r=min; ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
-function wrapText(ctx,text,x,y,maxWidth,lineH){ const words = text.split(' '); let line=''; for(let n=0;n<words.length;n++){ const test = line + words[n] + ' '; const m = ctx.measureText(test); if(m.width > maxWidth && n>0){ ctx.fillText(line.trim(), x, y); line = words[n] + ' '; y += lineH; } else line=test; } if(line) ctx.fillText(line.trim(), x, y); return y; }
+/* ---------- Export ---------- */
+function roundedRectPath(ctx,x,y,w,h,r){ const min=Math.min(w,h)/2; if(r>min) r=min; ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function wrapText(ctx,text,x,y,maxWidth,lineH){ const words=text.split(' '); let line=''; for(let n=0;n<words.length;n++){ const test=line+words[n]+' '; const m=ctx.measureText(test); if(m.width>maxWidth && n>0){ ctx.fillText(line.trim(), x, y); line=words[n]+' '; y+=lineH; } else line=test; } if(line) ctx.fillText(line.trim(), x, y); return y; }
 function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.crossOrigin='anonymous'; i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
 
-/* helper to draw user image in export, supports roundMode */
-async function drawUserImageInExport(ctx, sx, sy, sw, sh) {
-  if (!userImage || !userImage.src) return;
-  const img = await loadImage(userImage.src);
+/* draw round image for export (with frame) */
+async function drawRoundExport(ctx, sx, sy, sw, sh){
+  if (!roundImage || !roundImage.src) return;
+  // compute circle area (use square inside slot)
+  const size = Math.min(sw, sh);
+  // we'll center the circle relative to slot
+  const cx = sx + Math.round((sw - size)/2) + size/2;
+  const cy = sy + Math.round((sh - size)/2) + size/2;
+  const radius = size/2;
 
-  // compute object-fit: cover
+  const img = await loadImage(roundImage.src);
+  // compute object-fit: cover relative to size
   const imgRatio = img.width / img.height;
-  const slotRatio = sw / sh;
-  let baseDrawW, baseDrawH, baseDX, baseDY;
-  if (imgRatio > slotRatio) {
-    baseDrawH = sh;
-    baseDrawW = img.width * (sh / img.height);
-    baseDX = sx - (baseDrawW - sw) / 2;
-    baseDY = sy;
-  } else {
-    baseDrawW = sw;
-    baseDrawH = img.height * (sw / img.width);
-    baseDX = sx;
-    baseDY = sy - (baseDrawH - sh) / 2;
-  }
+  const slotRatio = 1; // since circle uses square
+  let baseW, baseH, baseX, baseY;
+  if (imgRatio > slotRatio){ baseH = size; baseW = img.width * (size / img.height); baseX = cx - size/2 - (baseW - size)/2; baseY = cy - size/2; }
+  else { baseW = size; baseH = img.height * (size / img.width); baseX = cx - size/2; baseY = cy - size/2 - (baseH - size)/2; }
 
-  // parse preview transform
-  let tx = 0, ty = 0, s = 1;
-  const t = userImage.style.transform || '';
-  const m = t.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)\s*scale\(([\d.]+)\)/);
-  if (m) { tx = parseFloat(m[1]); ty = parseFloat(m[2]); s = parseFloat(m[3]); }
-  else {
-    const sMatch = t.match(/scale\(([\d.]+)\)/);
-    const xMatch = t.match(/translateX\(([-\d.]+)px\)/);
-    const yMatch = t.match(/translateY\(([-\d.]+)px\)/);
-    if (sMatch) s = parseFloat(sMatch[1]);
-    if (xMatch) tx = parseFloat(xMatch[1]);
-    if (yMatch) ty = parseFloat(yMatch[1]);
-  }
+  // apply round image transforms rTx/rTy/rScale relative to roundSlot pixel size
+  const finalW = baseW * rScale;
+  const finalH = baseH * rScale;
+  // rTx/rTy were applied in CSS px relative to displayed roundSlot size on screen;
+  // we need to scale them to canvas coordinate system:
+  const slotRect = roundSlot.getBoundingClientRect();
+  const posterRect = poster.getBoundingClientRect();
+  const displaySw = slotRect.width;
+  const displaySh = slotRect.height;
+  const scaleX = size / displaySw;
+  const scaleY = size / displaySh;
+  const finalX = baseX + rTx * scaleX + (size - baseW)/2;
+  const finalY = baseY + rTy * scaleY;
 
-  const finalW = baseDrawW * s;
-  const finalH = baseDrawH * s;
-  const finalX = baseDX + tx + (sw - baseDrawW)/2;
-  const finalY = baseDY + ty;
+  ctx.save();
+  // circle clip
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI*2);
+  ctx.closePath();
+  ctx.clip();
+  ctx.drawImage(img, finalX, finalY, finalW, finalH);
+  // subtle fade
+  const grad = ctx.createLinearGradient(0, cy, 0, cy + radius);
+  grad.addColorStop(0, 'rgba(255,255,255,0)');
+  grad.addColorStop(1, 'rgba(255,255,255,0.6)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(cx - radius, cy, size, radius);
+  ctx.restore();
 
-  if (!roundMode) {
+  // draw frame overlay (scale to size)
+  try {
+    const frameImg = await loadImage('BackgroundEraser_20251105_163946020.png');
+    const pad = Math.round(size * 0.02);
+    ctx.drawImage(frameImg, cx - radius - pad, cy - radius - pad, size + pad*2, size + pad*2);
+  } catch(e){
+    // fallback: draw simple ring
     ctx.save();
-    roundedRectPath(ctx, sx, sy, sw, sh, 18);
-    ctx.clip();
-    ctx.drawImage(img, finalX, finalY, finalW, finalH);
-    const grad = ctx.createLinearGradient(0, sy + sh * 0.6, 0, sy + sh);
-    grad.addColorStop(0, 'rgba(255,255,255,0)');
-    grad.addColorStop(1, 'rgba(255,255,255,1)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(sx, sy + sh * 0.6, sw, sh * 0.4);
-    ctx.restore();
-  } else {
-    // Circle clip - use square area (size = min(sw, sh))
-    const size = Math.min(sw, sh);
-    const cx = sx + Math.round((sw - size) / 2) + size/2;
-    const cy = sy + Math.round((sh - size) / 2) + size/2;
-    const radius = size/2;
-
-    ctx.save();
+    ctx.lineWidth = Math.max(6, Math.round(size * 0.04));
+    ctx.strokeStyle = 'rgba(255,215,0,0.95)';
     ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.closePath();
-    ctx.clip();
-    ctx.drawImage(img, finalX, finalY, finalW, finalH);
-
-    // subtle bottom fade inside circle
-    const grad = ctx.createLinearGradient(0, cy, 0, cy + radius);
-    grad.addColorStop(0, 'rgba(255,255,255,0)');
-    grad.addColorStop(1, 'rgba(255,255,255,0.6)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(cx - radius, cy, size, radius);
+    ctx.arc(cx, cy, radius - ctx.lineWidth/2, 0, Math.PI*2);
+    ctx.stroke();
     ctx.restore();
-
-    // draw frame image (frame.png) on top if available
-    try {
-      const frameImg = await loadImage('frame.png'); // put your frame file in same folder
-      // optionally scale frame slightly larger than circle
-      const pad = Math.round(size * 0.02);
-      ctx.drawImage(frameImg, cx - radius - pad, cy - radius - pad, size + pad*2, size + pad*2);
-    } catch (err) {
-      // if missing, draw simple gold ring
-      ctx.save();
-      ctx.lineWidth = Math.max(6, Math.round(size * 0.04));
-      ctx.strokeStyle = 'rgba(255,215,0,0.95)';
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius - ctx.lineWidth/2, 0, Math.PI*2);
-      ctx.stroke();
-      ctx.restore();
-    }
   }
 }
 
 document.getElementById('downloadBtn').addEventListener('click', async ()=>{
-  try{
-    // ensure title fits before export
+  try {
     fitTitleToOneLine();
-
-    const posterEl = document.getElementById('poster');
+    const posterEl = poster;
     const w = posterEl.clientWidth, h = posterEl.clientHeight;
-    const canvas = document.createElement('canvas'); canvas.width=w; canvas.height=h; const ctx = canvas.getContext('2d');
+    const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
 
-    // draw bg
+    // draw background
     const bgEl = document.getElementById('bgImage');
-    if(bgEl && bgEl.src){ const bgImg = await loadImage(bgEl.src); ctx.drawImage(bgImg,0,0,w,h); } else { ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); }
+    if (bgEl && bgEl.src) { const bg = await loadImage(bgEl.src); ctx.drawImage(bg,0,0,w,h); } else { ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); }
 
-    // slot geometry
+    // compute slot geometry on canvas
     const slotRect = slot.getBoundingClientRect();
-    const posterRect = posterEl.getBoundingClientRect();
+    const posterRect = poster.getBoundingClientRect();
     const sx = Math.round(slotRect.left - posterRect.left);
     const sy = Math.round(slotRect.top - posterRect.top);
     const sw = Math.round(slotRect.width);
     const sh = Math.round(slotRect.height);
     const cornerRadius = 18;
 
-    // photo card shadow + card
+    // draw photo card background + shadow
     ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.28)';
-    ctx.shadowBlur = 20; ctx.shadowOffsetY=8;
+    ctx.shadowColor = 'rgba(0,0,0,0.28)'; ctx.shadowBlur = 20; ctx.shadowOffsetY = 8;
     ctx.fillStyle = 'rgba(255,255,255,0.96)';
-    roundedRectPath(ctx,sx,sy,sw,sh,cornerRadius); ctx.fill();
+    roundedRectPath(ctx, sx, sy, sw, sh, cornerRadius); ctx.fill();
     ctx.restore();
 
-    // draw user image (rounded rect or circular via helper)
-    await drawUserImageInExport(ctx, sx, sy, sw, sh);
+    // draw main user image clipped
+    if (userImage && userImage.src) {
+      const img = await loadImage(userImage.src);
+      // compute base cover
+      const imgRatio = img.width / img.height;
+      const slotRatio = sw / sh;
+      let baseW, baseH, baseX, baseY;
+      if (imgRatio > slotRatio) { baseH = sh; baseW = img.width * (sh / img.height); baseX = sx - (baseW - sw)/2; baseY = sy; }
+      else { baseW = sw; baseH = img.height * (sw / img.width); baseX = sx; baseY = sy - (baseH - sh)/2; }
+      // parse CSS transform
+      let tx=0, ty=0, s=1;
+      const t = userImage.style.transform || '';
+      const m = t.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)\s*scale\(([\d.]+)\)/);
+      if (m) { tx=parseFloat(m[1]); ty=parseFloat(m[2]); s=parseFloat(m[3]); }
+      else { const sM = t.match(/scale\(([\d.]+)\)/); const xM = t.match(/translateX\(([-\d.]+)px\)/); const yM = t.match(/translateY\(([-\d.]+)px\)/); if(sM) s=parseFloat(sM[1]); if(xM) tx=parseFloat(xM[1]); if(yM) ty=parseFloat(yM[1]); }
+      const finalW = baseW * s, finalH = baseH * s;
+      const finalX = baseX + tx + (sw - baseW)/2, finalY = baseY + ty;
+      ctx.save(); roundedRectPath(ctx, sx, sy, sw, sh, cornerRadius); ctx.clip();
+      ctx.drawImage(img, finalX, finalY, finalW, finalH);
+      // bottom fade
+      const grad = ctx.createLinearGradient(0, sy + sh*0.6, 0, sy + sh);
+      grad.addColorStop(0, 'rgba(255,255,255,0)');
+      grad.addColorStop(1, 'rgba(255,255,255,1)');
+      ctx.fillStyle = grad; ctx.fillRect(sx, sy + sh*0.6, sw, sh*0.4);
+      ctx.restore();
+      // small ellipse shadow under card
+      ctx.save(); ctx.globalCompositeOperation='destination-over'; ctx.fillStyle='rgba(0,0,0,0.06)';
+      const eW = sw*0.9, eH = 22, eX = sx + (sw-eW)/2, eY = sy + sh - 10;
+      ctx.beginPath(); ctx.ellipse(eX+eW/2, eY+eH/2, eW/2, eH/2, 0,0,Math.PI*2); ctx.fill(); ctx.restore();
+    }
 
-    // small ellipse shadow under card
-    ctx.save(); ctx.globalCompositeOperation='destination-over'; ctx.fillStyle='rgba(0,0,0,0.06)';
-    const eW = sw*0.9, eH = 22, eX = sx + (sw-eW)/2, eY = sy + sh - 10;
-    ctx.beginPath(); ctx.ellipse(eX+eW/2, eY+eH/2, eW/2, eH/2, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
+    // draw round slot if enabled (compute round slot geometry on canvas)
+    if (roundEnabled && roundSlot.classList.contains('active')) {
+      const rRect = roundSlot.getBoundingClientRect();
+      const rx = Math.round(rRect.left - posterRect.left);
+      const ry = Math.round(rRect.top - posterRect.top);
+      const rw = Math.round(rRect.width);
+      const rh = Math.round(rRect.height);
+      // draw circle background (optional subtle)
+      ctx.save(); ctx.fillStyle='rgba(255,255,255,0.03)'; ctx.beginPath(); ctx.arc(rx + rw/2, ry + rh/2, Math.min(rw, rh)/2 + 6, 0, Math.PI*2); ctx.fill(); ctx.restore();
+      // draw round image and frame
+      await drawRoundExport(ctx, rx, ry, rw, rh);
+    }
 
-    // info card translucent (use on-screen position)
+    // info card translucent
     const infoEl = document.querySelector('.info'); const infoRect = infoEl.getBoundingClientRect();
     const infoX = Math.round(infoRect.left - posterRect.left), infoY = Math.round(infoRect.top - posterRect.top);
     const infoW = Math.round(infoRect.width), infoH = Math.round(infoRect.height);
     ctx.save(); ctx.shadowColor='rgba(0,0,0,0.12)'; ctx.shadowBlur=20; ctx.shadowOffsetY=8;
     ctx.fillStyle='rgba(255,255,255,0.5)'; roundedRectPath(ctx, infoX, infoY, infoW, infoH, 10); ctx.fill(); ctx.restore();
 
-    // translucent title box (match CSS)
+    // translucent title box
     const leftMargin = 40;
-    const titleMaxWidth = Math.max(100, sx - leftMargin - 24);
+    const titleMaxWidth = Math.max(100, (slot.getBoundingClientRect().left - poster.getBoundingClientRect().left) - leftMargin - 24);
     const titleBoxX = leftMargin - 12, titleBoxY = 22, titleBoxW = titleMaxWidth + 24, titleBoxH = 110;
     ctx.save(); ctx.fillStyle='rgba(255,255,255,0.06)'; roundedRectPath(ctx, titleBoxX, titleBoxY, titleBoxW, titleBoxH, 12); ctx.fill(); ctx.restore();
 
-    // draw title with shadow (one line)
+    // draw title
     const titleText = titleEl.innerText.trim();
-    ctx.save(); ctx.fillStyle='#fff'; 
-    // font size: read computed font size of titleEl to match preview
+    ctx.save(); ctx.fillStyle='#fff';
     const computedFontSize = parseFloat(getComputedStyle(titleEl).fontSize) || 64;
     ctx.font = `bold ${Math.round(computedFontSize)}px system-ui`;
     ctx.shadowColor='rgba(0,0,0,0.45)'; ctx.shadowBlur=12; ctx.shadowOffsetY=4;
@@ -443,19 +416,17 @@ document.getElementById('downloadBtn').addEventListener('click', async ()=>{
     const subtitle = document.getElementById('sub').innerText.trim();
     ctx.save(); ctx.fillStyle='rgba(255,255,255,0.95)'; ctx.font='20px system-ui'; ctx.fillText(subtitle, leftMargin, 130, titleMaxWidth); ctx.restore();
 
-    // draw info text
+    // info text
     ctx.save(); ctx.fillStyle='#08314e'; ctx.font='bold 20px system-ui'; ctx.fillText(document.getElementById('tag').innerText.trim(), infoX+20, infoY+34);
     ctx.font='18px system-ui'; let yy = infoY + 34 + 28;
     const bullets = Array.from(document.querySelectorAll('#bullets li')).map(li=>li.innerText.trim());
     for(const b of bullets){ ctx.fillText('• ' + b, infoX+20, yy, infoW-40); yy += 26; }
     ctx.restore();
 
-    // export
-    const link = document.createElement('a'); link.download='poster_export.png'; link.href = canvas.toDataURL('image/png'); link.click();
-
-  } catch(err){ console.error('Export error', err); alert('Export failed: ' + err.message); }
+    // download
+    const link = document.createElement('a'); link.download = 'poster_export.png'; link.href = canvas.toDataURL('image/png'); link.click();
+  } catch(err) { console.error(err); alert('Export failed: ' + (err.message || err)); }
 });
 </script>
 </body>
 </html>
-```0
