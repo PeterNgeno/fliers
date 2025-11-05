@@ -1,28 +1,335 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Poster Generator</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Poster editor — upload photo into slot</title>
+<style>
+  :root{
+    --poster-width: 800px;   /* you can change to any design width */
+    --poster-height: 1200px; /* keep aspect ratio similar to your poster */
+    --slot-right: 70px;      /* distance from right edge to slot */
+    --slot-top: 160px;       /* top offset of the slot */
+    --slot-width: 420px;     /* slot size (width) */
+    --slot-height: 820px;    /* slot height */
+  }
+
+  body { 
+    display:flex; 
+    justify-content:center; 
+    padding:20px; 
+    background:#f3f4f6;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+
+  .poster-frame {
+    width: var(--poster-width);
+    height: var(--poster-height);
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    background-color: white;
+    /* Replace the URL below with the real poster background image (the one with the man removed).
+       If you don't have that image as a file, you can keep the CSS background and still allow uploads. */
+    background-image: url('background.jpg');
+    background-size: cover;
+    background-position: center;
+  }
+
+  /* Big headline area (example editable text) */
+  .headline {
+    position: absolute;
+    left: 40px;
+    top: 40px;
+    color: #ffffff;
+    text-shadow: 0 3px 6px rgba(0,0,0,0.35);
+  }
+  .headline h1 { margin:0; font-size:48px; letter-spacing: .5px; }
+  .headline p { margin:6px 0 0 0; font-size:20px; color:#f3f6fb; }
+
+  /* Photo slot (where user's uploaded photo will appear) */
+  .photo-slot {
+    position: absolute;
+    right: var(--slot-right);
+    top: var(--slot-top);
+    width: var(--slot-width);
+    height: var(--slot-height);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: transparent;
+  }
+
+  /* The user's image is placed in an <img> that fills the slot */
+  .photo-slot img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* ensures cover cropping */
+    object-position: center;
+    display:block;
+    transform-origin:center;
+    transition: transform .25s ease;
+  }
+
+  /* Fade at bottom of the photo to blend with poster (works in modern browsers) */
+  .photo-slot::after {
+    content: "";
+    position: absolute;
+    left:0; right:0; bottom:0;
+    height: 30%;
+    /* Use a gradient mask to fade the lower part — this visually fades the image into the background */
+    background: linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%);
+    /* The color used in gradient should approximately match the poster area where you want the fade */
+    pointer-events: none;
+    mix-blend-mode: normal;
+    opacity: .85; /* tweak as needed */
+  }
+
+  /* Info box area (editable text example) */
+  .info {
+    position: absolute;
+    left:40px;
+    top:140px;
+    width: 380px;
+    color: #0a2540;
+    background: rgba(255,255,255,0.85);
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(13,37,63,0.08);
+  }
+  .info h2{margin:0 0 8px 0;font-size:20px;color:#09325a}
+  .info ul{margin:8px 0 0 18px}
+  .info li{margin:6px 0}
+
+  /* small controls at bottom */
+  .controls {
+    position: absolute;
+    left: 14px;
+    bottom: 14px;
+    display:flex;
+    gap:10px;
+    align-items:center;
+    z-index:40;
+  }
+
+  .controls input[type=file] { display:block; }
+  .controls button { padding:8px 12px; border-radius:6px; border: none; background:#0a58ca; color:white; cursor:pointer; }
+
+  /* simple responsive */
+  @media (max-width:900px){
+    :root{ --poster-width:360px; --poster-height:540px; --slot-width:170px; --slot-height:330px; --slot-right:20px; --slot-top:100px; }
+    .headline h1{font-size:28px}
+  }
+</style>
 </head>
 <body>
-  <h2>Poster Generator</h2>
 
-  <div class="inputs">
-    <label>A. MWAHE: <input type="text" id="aInput" value="MWAHE"></label><br>
-    <label>B. ALTAR: <input type="text" id="bInput" value="ALTAR"></label><br>
-    <label>C. Invitation: <input type="text" id="cInput" value="Welcomes you to:"></label><br>
-    <label>D. Venue: <input type="text" id="dInput" value="VENUE: Mwahe"></label><br>
-    <label>E. Time: <input type="text" id="eInput" value="7:00AM"></label><br>
-    <label>F. Contact Label: <input type="text" id="fInput" value="Contact info:"></label><br>
-    <label>G. Pastor: <input type="text" id="gInput" value="Snr Pst Julius Kirui"></label><br>
-    <label>H. Contacts: <input type="text" id="hInput" value="0703 244 966"></label><br>
+<div class="poster-frame" id="poster">
+
+  <!-- headline (editable) -->
+  <div class="headline">
+    <h1 contenteditable="true" id="title">HAPPY</h1>
+    <p contenteditable="true" id="sub">Birthday Christopher</p>
   </div>
 
-  <canvas id="posterCanvas" width="1350" height="750"></canvas><br>
-  <button onclick="downloadPoster()">Download Poster</button>
+  <!-- info card: example of replaceable text; the user can change these via contenteditable or form -->
+  <div class="info">
+    <h2 contenteditable="true" id="tag">A blessed day!</h2>
+    <ul id="bullets">
+      <li contenteditable="true">The Lord bless you and keep you</li>
+      <li contenteditable="true">The Lord make His face shine upon you</li>
+      <li contenteditable="true">Numbers 6:24–26</li>
+    </ul>
+  </div>
 
-  <script src="script.js"></script>
+  <!-- Photo slot where uploaded image will be shown -->
+  <div class="photo-slot" id="slot">
+    <img id="userImage" alt="Upload your photo to replace this area" src="" style="display:none">
+    <!-- Placeholder text when no image is uploaded -->
+    <div id="placeholder" style="color:#fff; font-weight:600; text-align:center; display:flex; align-items:center; justify-content:center; width:100%; height:100%; background: rgba(0,0,0,0.12);">
+      Drop or upload image
+    </div>
+  </div>
+
+  <!-- controls (upload button + optional export) -->
+  <div class="controls">
+    <input id="fileInput" type="file" accept="image/*">
+    <button id="zoomIn">Zoom +</button>
+    <button id="zoomOut">Zoom -</button>
+    <button id="downloadBtn">Export PNG</button>
+  </div>
+</div>
+
+<script>
+/*
+  Basic client-side image placement logic.
+  - Sets uploaded image as src for #userImage.
+  - Shows placeholder until image is loaded.
+  - Simple zoom controls (scale via CSS transform).
+  - Export: draws background image + user image + text onto a canvas and prompts download.
+    Note: For export to work reliably the background must be an image file accessible (same-origin)
+*/
+
+const fileInput = document.getElementById('fileInput');
+const userImage = document.getElementById('userImage');
+const placeholder = document.getElementById('placeholder');
+const slot = document.getElementById('slot');
+let scale = 1;
+let translateX = 0, translateY = 0;
+
+// read and set image
+fileInput.addEventListener('change', e => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    userImage.src = ev.target.result;
+    userImage.style.display = 'block';
+    placeholder.style.display = 'none';
+    // reset transforms
+    scale = 1;
+    userImage.style.transform = `scale(${scale}) translate(0px,0px)`;
+  }
+  reader.readAsDataURL(file);
+});
+
+// simple zoom controls
+document.getElementById('zoomIn').addEventListener('click', () => {
+  scale = Math.min(3, scale + 0.1);
+  userImage.style.transform = `scale(${scale})`;
+});
+document.getElementById('zoomOut').addEventListener('click', () => {
+  scale = Math.max(0.4, scale - 0.1);
+  userImage.style.transform = `scale(${scale})`;
+});
+
+// allow drag to reposition the image inside the slot
+let dragging = false, startX=0, startY=0, lastX=0, lastY=0;
+slot.addEventListener('pointerdown', (ev) => {
+  if (userImage.style.display === 'none') return;
+  dragging = true;
+  startX = ev.clientX;
+  startY = ev.clientY;
+  slot.style.cursor = 'grabbing';
+  ev.preventDefault();
+});
+window.addEventListener('pointermove', (ev) => {
+  if (!dragging) return;
+  const dx = ev.clientX - startX;
+  const dy = ev.clientY - startY;
+  userImage.style.transform = `scale(${scale}) translate(${lastX + dx}px, ${lastY + dy}px)`;
+});
+window.addEventListener('pointerup', (ev) => {
+  if (!dragging) return;
+  const dx = ev.clientX - startX;
+  const dy = ev.clientY - startY;
+  lastX += dx; lastY += dy;
+  dragging = false;
+  slot.style.cursor = 'default';
+});
+
+// Export function: draws composition to canvas and triggers download.
+// NOTE: For exact export, you should provide the same background image file (not a remote CSS background).
+document.getElementById('downloadBtn').addEventListener('click', async () => {
+  // Ask/confirm the background file path you used. If 'background.jpg' is present in same folder it will be used.
+  try {
+    const poster = document.getElementById('poster');
+    const w = poster.clientWidth;
+    const h = poster.clientHeight;
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+
+    // 1) draw background image if available
+    // Replace 'background.jpg' with the file name used in CSS; that image must be same-origin or a data URL.
+    const bgUrl = getComputedStyle(poster).backgroundImage;
+    let urlMatch = bgUrl && bgUrl.match(/url\(["']?(.+?)["']?\)/);
+    if (urlMatch && urlMatch[1]) {
+      const bgSrc = urlMatch[1];
+      // load background
+      const bgImg = await loadImage(bgSrc);
+      ctx.drawImage(bgImg, 0, 0, w, h);
+    } else {
+      // fallback: draw white background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0,0,w,h);
+    }
+
+    // 2) draw user image into slot region (preserving object-fit:cover)
+    if (userImage && userImage.src) {
+      const img = await loadImage(userImage.src);
+      const slotRect = slot.getBoundingClientRect();
+      const posterRect = poster.getBoundingClientRect();
+      // slot coords relative to poster
+      const sx = slotRect.left - posterRect.left;
+      const sy = slotRect.top - posterRect.top;
+      const sw = slotRect.width;
+      const sh = slotRect.height;
+
+      // draw cover logic: fill slot with img preserving aspect ratio (cover)
+      const imgRatio = img.width / img.height;
+      const slotRatio = sw / sh;
+      let drawW, drawH, dx, dy;
+      if (imgRatio > slotRatio) {
+        // image is wider -> fit height
+        drawH = sh;
+        drawW = img.width * (sh / img.height);
+        dx = sx - (drawW - sw)/2;
+        dy = sy;
+      } else {
+        // image taller -> fit width
+        drawW = sw;
+        drawH = img.height * (sw / img.width);
+        dx = sx;
+        dy = sy - (drawH - sh)/2;
+      }
+      // Note: if user dragged (lastX,lastY), we didn't factor that into canvas draw.
+      ctx.drawImage(img, dx, dy, drawW, drawH);
+
+      // apply bottom fade: draw a white gradient over bottom area to match poster fade
+      const grad = ctx.createLinearGradient(0, sy + sh*0.6, 0, sy + sh);
+      grad.addColorStop(0, 'rgba(255,255,255,0)');
+      grad.addColorStop(1, 'rgba(255,255,255,1)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(sx, sy + sh*0.6, sw, sh*0.4);
+    }
+
+    // 3) draw editable text content (simple approach — use the text values and draw into canvas)
+    // Example: Title (HAPPY), sub, and bullet text. You can add more precise styling as needed.
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 48px system-ui';
+    const titleText = document.getElementById('title').innerText.trim();
+    ctx.fillText(titleText, 40, 80);
+    ctx.font = '20px system-ui';
+    ctx.fillText(document.getElementById('sub').innerText.trim(), 40, 110);
+
+    // 4) download
+    const link = document.createElement('a');
+    link.download = 'poster_export.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+
+  } catch (err) {
+    alert('Export failed: ' + err.message + '\n\nTip: For export to work cleanly, ensure your poster background is an image file (background.jpg) in the same folder and not a remote URL blocked by CORS.');
+    console.error(err);
+  }
+});
+
+function loadImage(src){
+  return new Promise((res, rej)=>{
+    const img = new Image();
+    // If src is cross-origin remote resource you'll need CORS-enabled headers or use same-origin file.
+    img.crossOrigin = 'anonymous';
+    img.onload = ()=>res(img);
+    img.onerror = e => rej(new Error('Failed to load image: '+src));
+    img.src = src;
+  });
+}
+</script>
 </body>
-</html>
+  </html>
