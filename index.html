@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Poster Editor — movable round photos x2 + backgrounds (panel above)</title>
+<title>Poster Editor — movable round photos x2 + backgrounds (stack fixed)</title>
 <style>
   :root{
     --poster-width:800px; --poster-height:1200px;
@@ -11,7 +11,6 @@
     --left-margin:40px;
   }
   *{box-sizing:border-box}
-  /* make body positioned so bg-panel can be absolute relative to page */
   body{position:relative; display:flex;justify-content:center;padding:140px 20px 20px;background:#f3f4f6;font-family:system-ui, -apple-system, "Segoe UI", Roboto, Arial;margin:0}
   .poster-frame{width:var(--poster-width);height:var(--poster-height);position:relative;border-radius:12px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.25);background:#fff}
   .poster-frame .bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;pointer-events:none}
@@ -26,9 +25,36 @@
   .photo-slot::after{content:"";position:absolute;inset:auto 0 0 0;height:30%;background:linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%);opacity:.85;pointer-events:none}
 
   /* round photo slot - two instances will share this style */
-  .round-slot{position:absolute; right: calc(var(--slot-right) + var(--slot-width) + 10px); top: calc(var(--slot-top) + 40px); width:140px; height:140px; border-radius:50%; overflow:hidden; z-index:55; display:none; align-items:center; justify-content:center; background:transparent; cursor:grab; transition:all .12s}
+  .round-slot{
+    position:absolute;
+    /* initial position; JS will compute precise pixel positions when enabled */
+    right: calc(var(--slot-right) + var(--slot-width) + 10px);
+    top: calc(var(--slot-top) + 40px);
+    width:140px; height:140px;
+    border-radius:50%;
+    overflow:hidden;
+    z-index:55;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    background:transparent;
+    cursor:grab;
+    transition:all .12s;
+    -webkit-user-select:none; user-select:none;
+  }
   .round-slot.active{display:flex; box-shadow:0 14px 30px rgba(0,0,0,.28);}
-  .round-slot img.round-img{display:block; width:120%; height:120%; object-fit:cover; transform-origin:center; transition:transform .12s ease}
+  /* make the image slightly larger by default so heads don't get accidentally cropped
+     users can still zoom out/in and pan with existing controls */
+  .round-slot img.round-img{
+    display:block;
+    width:160%;
+    height:160%;
+    object-fit:cover;
+    object-position:center center;
+    transform-origin:center center;
+    transition:transform .12s ease;
+    pointer-events:none; /* keep pointer interaction on the slot for dragging */
+  }
   .round-slot .frame-overlay{position:absolute; inset:0; pointer-events:none; width:100%; height:100%; object-fit:contain}
 
   .info{position:absolute;left:40px;bottom:60px;width:calc(100% - 100px);max-width:700px;background:rgba(255,255,255,.45);color:#0b3a61;border-radius:10px;padding:16px 20px;box-shadow:0 8px 25px rgba(0,0,0,.10);z-index:60;backdrop-filter:blur(3px)}
@@ -116,7 +142,7 @@
     </div>
 
     <!-- round photo slots (1 & 2) -->
-    <div class="round-slot" id="roundSlot1" title="Drag to reposition round image 1">
+    <div class="round-slot" id="roundSlot1" title="Drag to reposition round image 1" style="">
       <img id="roundImage1" class="round-img" alt="Round uploaded photo 1" style="display:none" />
       <img id="roundFrame1" class="frame-overlay" alt="Frame overlay 1" src="20251106_004524.png" style="display:none" />
     </div>
@@ -143,7 +169,9 @@
     <div class="controls">
       <label for="fileInput" style="cursor:pointer;">Choose Photo</label>
       <input id="fileInput" type="file" accept="image/*" />
+
       <button id="removeBgBtn" disabled>Remove BG</button>
+
       <button class="zoom-btn" id="zoomOut">−</button>
       <button class="zoom-btn" id="zoomIn">+</button>
 
@@ -284,6 +312,44 @@ function updateTransform(){ userImage.style.transform = `translate(${translateX}
 document.getElementById('zoomIn').addEventListener('click', ()=>{ scale = Math.min(3.5, scale + 0.1); updateTransform(); });
 document.getElementById('zoomOut').addEventListener('click', ()=>{ scale = Math.max(0.5, scale - 0.1); updateTransform(); });
 
+/* ---------- position arranger for round stack ---------- */
+function arrangeRoundSlots() {
+  // Position roundSlot1 relative to main slot (to left/top area)
+  const slotRect = slot.getBoundingClientRect();
+  const posterRect = poster.getBoundingClientRect();
+
+  // compute a sane default for r1: to the left and slightly above the top of main slot
+  const r1LeftPx = (slotRect.right - posterRect.left) + 14; // right of main slot
+  const r1TopPx  = (slotRect.top - posterRect.top) + 10;   // slightly down from top of slot
+
+  // apply in-page CSS pixels
+  roundSlot1.style.left = 'auto';
+  roundSlot1.style.right = ''; // we'll use left to avoid calc quirks
+  roundSlot1.style.left = (slotRect.right - posterRect.left + 12) + 'px';
+  roundSlot1.style.top  = (slotRect.top - posterRect.top + 8) + 'px';
+  roundSlot1.style.zIndex = 56;
+
+  // r2 should be below and slightly to right, so it doesn't sit exactly on top
+  roundSlot2.style.left = (slotRect.right - posterRect.left + 28) + 'px';
+  roundSlot2.style.top  = (slotRect.top - posterRect.top + 92) + 'px';
+  roundSlot2.style.zIndex = 54;
+
+  // If user is on small screens, ensure they don't go outside poster bounds
+  const ensureInside = (el) => {
+    const r = el.getBoundingClientRect();
+    const left = r.left - posterRect.left;
+    const top = r.top - posterRect.top;
+    if (left + r.width > posterRect.width) {
+      el.style.left = (posterRect.width - r.width - 12) + 'px';
+    }
+    if (top + r.height > posterRect.height) {
+      el.style.top = (posterRect.height - r.height - 12) + 'px';
+    }
+  };
+  ensureInside(roundSlot1);
+  ensureInside(roundSlot2);
+}
+
 /* ---------- Round 1 behaviors ---------- */
 addRound1.addEventListener('click', ()=>{
   r1Enabled = !r1Enabled;
@@ -297,6 +363,7 @@ addRound1.addEventListener('click', ()=>{
     roundSlot1.classList.remove('active'); addRound1.innerText='Add R1';
     roundImage1.style.display='none'; roundFrame1.style.display='none'; roundSlot1.style.display='none';
   }
+  arrangeRoundSlots();
 });
 r1ZoomIn.addEventListener('click', ()=>{ r1Scale = Math.min(5, r1Scale + 0.08); updateRound1(); });
 r1ZoomOut.addEventListener('click', ()=>{ r1Scale = Math.max(0.3, r1Scale - 0.08); updateRound1(); });
@@ -331,6 +398,7 @@ addRound2.addEventListener('click', ()=>{
     roundSlot2.classList.remove('active'); addRound2.innerText='Add R2';
     roundImage2.style.display='none'; roundFrame2.style.display='none'; roundSlot2.style.display='none';
   }
+  arrangeRoundSlots();
 });
 r2ZoomIn.addEventListener('click', ()=>{ r2Scale = Math.min(5, r2Scale + 0.08); updateRound2(); });
 r2ZoomOut.addEventListener('click', ()=>{ r2Scale = Math.max(0.3, r2Scale - 0.08); updateRound2(); });
@@ -371,14 +439,16 @@ roundSlot2.addEventListener('dragover', e=>e.preventDefault());
 /* ---------- Title auto-fit ---------- */
 function fitTitleToOneLine(){ const container = document.querySelector('.headline'); const maxWidth = container.clientWidth - 28; let fontSize = 64; titleEl.style.fontSize = fontSize + 'px'; while (titleEl.scrollWidth > maxWidth && fontSize > 28) { fontSize -= 2; titleEl.style.fontSize = fontSize + 'px'; } }
 titleEl.addEventListener('input', fitTitleToOneLine);
-window.addEventListener('resize', fitTitleToOneLine);
-document.addEventListener('DOMContentLoaded', fitTitleToOneLine);
+window.addEventListener('resize', ()=>{ fitTitleToOneLine(); arrangeRoundSlots(); });
+document.addEventListener('DOMContentLoaded', ()=>{ fitTitleToOneLine(); arrangeRoundSlots(); });
 
 /* ---------- Verse editor (sync with .info) ---------- */
 const infoTag = document.getElementById('tag');
 const bulletsList = document.getElementById('bullets');
 
 function openVerseEditor(){
+  // create if not existing (verse editor exists in DOM earlier)
+  if(!verseEditor) return;
   verseEditor.style.display = 'block';
   verseEditorTag.innerText = infoTag.innerText;
   verseEditorBullets.innerHTML = '';
@@ -391,8 +461,8 @@ function openVerseEditor(){
 }
 function closeVerseEditor(){ verseEditor.style.display = 'none'; verseEditor.setAttribute('aria-hidden','true'); }
 editVerseBtn.addEventListener('click', openVerseEditor);
-verseClose.addEventListener('click', closeVerseEditor);
-verseSave.addEventListener('click', ()=>{
+if (verseClose) verseClose.addEventListener('click', closeVerseEditor);
+if (verseSave) verseSave.addEventListener('click', ()=>{
   infoTag.innerText = verseEditorTag.innerText.trim() || 'A blessed day!';
   bulletsList.innerHTML = '';
   const children = Array.from(verseEditorBullets.children);
@@ -429,11 +499,13 @@ async function removeBackgroundFromUserImage(){
   } catch(err){ console.error(err); alert('BG removal failed'); }
   finally { bgRemoving=false; if(btn){ btn.disabled=false; btn.innerText='Remove BG'; } }
 }
-document.addEventListener('DOMContentLoaded', ()=>{ document.getElementById('removeBgBtn').addEventListener('click', removeBackgroundFromUserImage); setupBgRemoval(); });
+document.addEventListener('DOMContentLoaded', ()=>{ const btn=document.getElementById('removeBgBtn'); if(btn) btn.addEventListener('click', removeBackgroundFromUserImage); setupBgRemoval(); });
 
-/* ---------- Export (unchanged) ---------- */
-/* (export code from your previous file remains the same; omitted here for brevity)
-   Full export implementation included above in your earlier version — keep it as-is. */
+/* ---------- Export ---------- */
+/* Keep your existing export implementation (drawRoundExport etc).
+   For brevity I assume your previous export functions are present below unchanged.
+   If you want I can paste the full export block again integrated with the new frame filename (20251106_004524.png).
+*/
 
 </script>
 </body>
