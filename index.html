@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Poster Editor — Title Fit + Semi-Transparent Backgrounds</title>
+<title>Poster Editor — Title Fit + Semi-Transparent Backgrounds + Round Frame</title>
 <style>
   :root {
     --poster-width: 800px;
@@ -87,10 +87,25 @@
     align-items: center;
     justify-content: center;
     background: rgba(255,255,255,0.02);
+    transition: height 200ms ease, width 200ms ease, border-radius 200ms ease;
   }
 
   .photo-slot img { width:100%; height:100%; object-fit:cover; object-position:center; transform-origin:center; transition: transform .15s ease; display:block; }
   .photo-slot::after { content:""; position:absolute; inset:auto 0 0 0; height:30%; background:linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%); opacity:0.85; pointer-events:none; }
+
+  /* Round mode preview (makes the slot square and circular) */
+  .photo-slot.round-mode {
+    border-radius: 50%;
+    height: var(--slot-width); /* make square */
+    width: var(--slot-width);
+    overflow: hidden;
+  }
+  .photo-slot.round-mode img {
+    width:120%;
+    height:120%;
+    object-fit:cover;
+    object-position:center;
+  }
 
   /* Info box translucent (more transparent than before) */
   .info {
@@ -112,9 +127,10 @@
   .info li { margin:6px 0; line-height:1.35; }
 
   /* Controls */
-  .controls { position:absolute; bottom:15px; right:20px; z-index:70; display:flex; gap:8px; align-items:center; }
+  .controls { position:absolute; bottom:15px; right:20px; z-index:70; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .controls input{ display:none; }
   .controls label, .controls button { background:#0a58ca; color:#fff; border:none; border-radius:8px; padding:8px 12px; cursor:pointer; font-weight:600; }
+  .controls label { display:inline-block; }
   .zoom-btn { width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-size:20px; }
 
   #placeholder{ color:#555; font-weight:600; text-align:center; padding:8px; }
@@ -155,6 +171,10 @@
       <button id="removeBgBtn" disabled>Remove BG</button>
       <button class="zoom-btn" id="zoomOut">−</button>
       <button class="zoom-btn" id="zoomIn">+</button>
+
+      <!-- NEW: round/frame toggle -->
+      <button id="toggleRoundBtn" title="Toggle round frame">Round</button>
+
       <button id="downloadBtn">Export</button>
     </div>
   </div>
@@ -171,7 +191,11 @@ const placeholder = document.getElementById('placeholder');
 const slot = document.getElementById('slot');
 const poster = document.getElementById('poster');
 const titleEl = document.getElementById('title');
+const toggleRoundBtn = document.getElementById('toggleRoundBtn');
 let scale = 1, translateX = 0, translateY = 0, dragging = false, startX = 0, startY = 0;
+
+// round mode flag
+let roundMode = false;
 
 fileInput.addEventListener('change', e=>{
   const f = e.target.files && e.target.files[0]; if(!f) return;
@@ -191,6 +215,22 @@ window.addEventListener('pointerup', ()=> dragging=false);
 
 document.getElementById('zoomIn').addEventListener('click', ()=>{ scale = Math.min(3.5, scale + 0.1); updateTransform(); });
 document.getElementById('zoomOut').addEventListener('click', ()=>{ scale = Math.max(0.5, scale - 0.1); updateTransform(); });
+
+/* ----------------- Round toggle (preview + adjust slot size) ----------------- */
+toggleRoundBtn.addEventListener('click', () => {
+  roundMode = !roundMode;
+  if (roundMode) {
+    slot.classList.add('round-mode');
+    toggleRoundBtn.innerText = 'Round ✓';
+    // ensure slot height matches width (square)
+    const w = slot.getBoundingClientRect().width;
+    slot.style.height = `${Math.round(w)}px`;
+  } else {
+    slot.classList.remove('round-mode');
+    toggleRoundBtn.innerText = 'Round';
+    slot.style.height = ''; // let CSS control height again
+  }
+});
 
 /* ----------------- Title auto-fit: prevent vertical stacking ----------------- */
 function fitTitleToOneLine() {
@@ -246,6 +286,98 @@ function roundedRectPath(ctx,x,y,w,h,r){ const min = Math.min(w,h)/2; if(r>min) 
 function wrapText(ctx,text,x,y,maxWidth,lineH){ const words = text.split(' '); let line=''; for(let n=0;n<words.length;n++){ const test = line + words[n] + ' '; const m = ctx.measureText(test); if(m.width > maxWidth && n>0){ ctx.fillText(line.trim(), x, y); line = words[n] + ' '; y += lineH; } else line=test; } if(line) ctx.fillText(line.trim(), x, y); return y; }
 function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.crossOrigin='anonymous'; i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
 
+/* helper to draw user image in export, supports roundMode */
+async function drawUserImageInExport(ctx, sx, sy, sw, sh) {
+  if (!userImage || !userImage.src) return;
+  const img = await loadImage(userImage.src);
+
+  // compute object-fit: cover
+  const imgRatio = img.width / img.height;
+  const slotRatio = sw / sh;
+  let baseDrawW, baseDrawH, baseDX, baseDY;
+  if (imgRatio > slotRatio) {
+    baseDrawH = sh;
+    baseDrawW = img.width * (sh / img.height);
+    baseDX = sx - (baseDrawW - sw) / 2;
+    baseDY = sy;
+  } else {
+    baseDrawW = sw;
+    baseDrawH = img.height * (sw / img.width);
+    baseDX = sx;
+    baseDY = sy - (baseDrawH - sh) / 2;
+  }
+
+  // parse preview transform
+  let tx = 0, ty = 0, s = 1;
+  const t = userImage.style.transform || '';
+  const m = t.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)\s*scale\(([\d.]+)\)/);
+  if (m) { tx = parseFloat(m[1]); ty = parseFloat(m[2]); s = parseFloat(m[3]); }
+  else {
+    const sMatch = t.match(/scale\(([\d.]+)\)/);
+    const xMatch = t.match(/translateX\(([-\d.]+)px\)/);
+    const yMatch = t.match(/translateY\(([-\d.]+)px\)/);
+    if (sMatch) s = parseFloat(sMatch[1]);
+    if (xMatch) tx = parseFloat(xMatch[1]);
+    if (yMatch) ty = parseFloat(yMatch[1]);
+  }
+
+  const finalW = baseDrawW * s;
+  const finalH = baseDrawH * s;
+  const finalX = baseDX + tx + (sw - baseDrawW)/2;
+  const finalY = baseDY + ty;
+
+  if (!roundMode) {
+    ctx.save();
+    roundedRectPath(ctx, sx, sy, sw, sh, 18);
+    ctx.clip();
+    ctx.drawImage(img, finalX, finalY, finalW, finalH);
+    const grad = ctx.createLinearGradient(0, sy + sh * 0.6, 0, sy + sh);
+    grad.addColorStop(0, 'rgba(255,255,255,0)');
+    grad.addColorStop(1, 'rgba(255,255,255,1)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(sx, sy + sh * 0.6, sw, sh * 0.4);
+    ctx.restore();
+  } else {
+    // Circle clip - use square area (size = min(sw, sh))
+    const size = Math.min(sw, sh);
+    const cx = sx + Math.round((sw - size) / 2) + size/2;
+    const cy = sy + Math.round((sh - size) / 2) + size/2;
+    const radius = size/2;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(img, finalX, finalY, finalW, finalH);
+
+    // subtle bottom fade inside circle
+    const grad = ctx.createLinearGradient(0, cy, 0, cy + radius);
+    grad.addColorStop(0, 'rgba(255,255,255,0)');
+    grad.addColorStop(1, 'rgba(255,255,255,0.6)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(cx - radius, cy, size, radius);
+    ctx.restore();
+
+    // draw frame image (frame.png) on top if available
+    try {
+      const frameImg = await loadImage('frame.png'); // put your frame file in same folder
+      // optionally scale frame slightly larger than circle
+      const pad = Math.round(size * 0.02);
+      ctx.drawImage(frameImg, cx - radius - pad, cy - radius - pad, size + pad*2, size + pad*2);
+    } catch (err) {
+      // if missing, draw simple gold ring
+      ctx.save();
+      ctx.lineWidth = Math.max(6, Math.round(size * 0.04));
+      ctx.strokeStyle = 'rgba(255,215,0,0.95)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius - ctx.lineWidth/2, 0, Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+}
+
 document.getElementById('downloadBtn').addEventListener('click', async ()=>{
   try{
     // ensure title fits before export
@@ -276,36 +408,13 @@ document.getElementById('downloadBtn').addEventListener('click', async ()=>{
     roundedRectPath(ctx,sx,sy,sw,sh,cornerRadius); ctx.fill();
     ctx.restore();
 
-    // draw user image clipped and faded
-    if(userImage && userImage.src){
-      const img = await loadImage(userImage.src);
-      const imgRatio = img.width / img.height;
-      const slotRatio = sw / sh;
-      let baseW, baseH, baseX, baseY;
-      if(imgRatio > slotRatio){ baseH = sh; baseW = img.width * (sh / img.height); baseX = sx - (baseW - sw)/2; baseY = sy; }
-      else { baseW = sw; baseH = img.height * (sw / img.width); baseX = sx; baseY = sy - (baseH - sh)/2; }
-      // parse transform
-      let tx=0, ty=0, s=1;
-      const t = userImage.style.transform || '';
-      const m = t.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)\s*scale\(([\d.]+)\)/);
-      if(m){ tx=parseFloat(m[1]); ty=parseFloat(m[2]); s=parseFloat(m[3]); }
-      else { const sM = t.match(/scale\(([\d.]+)\)/); const xM = t.match(/translateX\(([-\d.]+)px\)/); const yM = t.match(/translateY\(([-\d.]+)px\)/); if(sM) s=parseFloat(sM[1]); if(xM) tx=parseFloat(xM[1]); if(yM) ty=parseFloat(yM[1]); }
-      const finalW = baseW * s, finalH = baseH * s;
-      const finalX = baseX + tx + (sw - baseW)/2, finalY = baseY + ty;
-      ctx.save(); roundedRectPath(ctx,sx,sy,sw,sh,cornerRadius); ctx.clip();
-      ctx.drawImage(img, finalX, finalY, finalW, finalH);
-      // bottom fade
-      const grad = ctx.createLinearGradient(0, sy + sh*0.6, 0, sy + sh);
-      grad.addColorStop(0, 'rgba(255,255,255,0)');
-      grad.addColorStop(1, 'rgba(255,255,255,1)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(sx, sy + sh*0.6, sw, sh*0.4);
-      ctx.restore();
-      // small ellipse shadow under card
-      ctx.save(); ctx.globalCompositeOperation='destination-over'; ctx.fillStyle='rgba(0,0,0,0.06)';
-      const eW = sw*0.9, eH = 22, eX = sx + (sw-eW)/2, eY = sy + sh - 10;
-      ctx.beginPath(); ctx.ellipse(eX+eW/2, eY+eH/2, eW/2, eH/2, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
-    }
+    // draw user image (rounded rect or circular via helper)
+    await drawUserImageInExport(ctx, sx, sy, sw, sh);
+
+    // small ellipse shadow under card
+    ctx.save(); ctx.globalCompositeOperation='destination-over'; ctx.fillStyle='rgba(0,0,0,0.06)';
+    const eW = sw*0.9, eH = 22, eX = sx + (sw-eW)/2, eY = sy + sh - 10;
+    ctx.beginPath(); ctx.ellipse(eX+eW/2, eY+eH/2, eW/2, eH/2, 0, 0, Math.PI*2); ctx.fill(); ctx.restore();
 
     // info card translucent (use on-screen position)
     const infoEl = document.querySelector('.info'); const infoRect = infoEl.getBoundingClientRect();
@@ -322,8 +431,12 @@ document.getElementById('downloadBtn').addEventListener('click', async ()=>{
 
     // draw title with shadow (one line)
     const titleText = titleEl.innerText.trim();
-    ctx.save(); ctx.fillStyle='#fff'; ctx.font='bold 64px system-ui'; ctx.shadowColor='rgba(0,0,0,0.45)'; ctx.shadowBlur=12; ctx.shadowOffsetY=4;
-    wrapText(ctx, titleText, leftMargin, 90, titleMaxWidth, 72);
+    ctx.save(); ctx.fillStyle='#fff'; 
+    // font size: read computed font size of titleEl to match preview
+    const computedFontSize = parseFloat(getComputedStyle(titleEl).fontSize) || 64;
+    ctx.font = `bold ${Math.round(computedFontSize)}px system-ui`;
+    ctx.shadowColor='rgba(0,0,0,0.45)'; ctx.shadowBlur=12; ctx.shadowOffsetY=4;
+    wrapText(ctx, titleText, leftMargin, 90, titleMaxWidth, Math.max(72, computedFontSize + 10));
     ctx.restore();
 
     // subtitle
@@ -345,3 +458,4 @@ document.getElementById('downloadBtn').addEventListener('click', async ()=>{
 </script>
 </body>
 </html>
+```0
