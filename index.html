@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Poster Editor — movable round photos x2 (left) + colors + date + main movers</title>
+<title>Poster Editor — movable round photos x2 (left) + colors + date + export + bottom controls</title>
 <style>
   :root{
     --poster-width:800px; --poster-height:1200px;
@@ -11,7 +11,8 @@
     --left-margin:40px;
   }
   *{box-sizing:border-box}
-  body{position:relative; display:flex;justify-content:center;padding:140px 20px 20px;background:#f3f4f6;font-family:system-ui, -apple-system, "Segoe UI", Roboto, Arial;margin:0}
+  body{position:relative; display:flex;flex-direction:column;align-items:center;padding:40px;background:#f3f4f6;font-family:system-ui, -apple-system, "Segoe UI", Roboto, Arial;margin:0}
+  .poster-wrap{width:var(--poster-width)}
   .poster-frame{width:var(--poster-width);height:var(--poster-height);position:relative;border-radius:12px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.25);background:#fff}
   .poster-frame .bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;pointer-events:none}
 
@@ -24,7 +25,7 @@
   .photo-slot img{width:100%;height:100%;object-fit:cover;object-position:center;transform-origin:center;transition:transform .15s ease;display:block}
   .photo-slot::after{content:"";position:absolute;inset:auto 0 0 0;height:30%;background:linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%);opacity:.85;pointer-events:none}
 
-  /* round photo slot - two instances will share this style; initial left/top handled by JS */
+  /* round photo slot - two instances */
   .round-slot{
     position:absolute;
     left:0; top:0;
@@ -71,167 +72,135 @@
   .info ul{margin:6px 0 0 18px;padding:0}
   .info li{margin:6px 0;line-height:1.35}
 
-  .controls{position:absolute;bottom:15px;right:20px;z-index:90;display:flex;gap:8px;align-items:center;flex-wrap:wrap;max-width:680px}
+  /* controls docked under poster */
+  .controls{
+    width:var(--poster-width);
+    margin-top:12px;
+    display:flex;
+    gap:8px;
+    align-items:center;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    background:rgba(255,255,255,0.95);
+    padding:12px;
+    border-radius:10px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.08);
+  }
+  .controls-left, .controls-right { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .controls input[type="file"]{display:none}
   .controls label,.controls button{background:#0a58ca;color:#fff;border:none;border-radius:8px;padding:8px 10px;cursor:pointer;font-weight:600}
+  .controls .small { padding:6px 8px; font-size:14px; border-radius:6px; background:#0a58ca; color:#fff }
+
   .zoom-btn{width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:20px}
 
-  /* extra round controls area (stacked smaller) */
-  .round-controls { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
-  .small { padding:6px 8px; font-size:14px; border-radius:6px; }
-
-  #placeholder{color:#555;font-weight:600;text-align:center;padding:8px}
-
-  /* Verse editor (floating) -- appears when Edit Verse clicked */
-  .verse-editor {
-    position: absolute;
-    right: 20px;
-    bottom: 85px;
-    width: 320px;
-    max-width: calc(100% - 60px);
-    background: rgba(255,255,255,0.95);
-    border-radius: 10px;
-    padding: 10px;
-    z-index: 110;
-    box-shadow: 0 12px 30px rgba(0,0,0,0.18);
-    display: none;
-  }
-  .verse-editor h3 { margin: 0 0 8px 0; font-size:14px; color:#08314e; }
-  .verse-editor [contenteditable] { min-height:36px; padding:6px; border-radius:6px; border:1px dashed rgba(10,20,40,0.06); background: rgba(250,250,250,0.98); }
-
-  /* Background selector panel - top center of page */
-  .bg-panel {
-    position: absolute;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 130;
-    background: rgba(255,255,255,0.98);
-    border-radius: 8px;
-    padding: 10px;
-    box-shadow: 0 12px 35px rgba(0,0,0,0.18);
-    display:flex;
-    gap:12px;
-    align-items:center;
-  }
-  .bg-grid { display:flex; gap:8px; flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px; }
-  .bg-thumb { width:64px; height:96px; object-fit:cover; border-radius:6px; cursor:pointer; border:2px solid transparent; flex:0 0 auto; }
+  .bg-panel{position:relative; display:flex; gap:8px; align-items:center;}
+  .bg-grid { display:flex; gap:8px; flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px; max-width:300px; }
+  .bg-thumb { width:48px; height:72px; object-fit:cover; border-radius:6px; cursor:pointer; border:2px solid transparent; flex:0 0 auto; }
   .bg-thumb.selected { border-color:#0a58ca; }
 
   .color-controls { display:flex; gap:8px; align-items:center; flex-wrap:wrap; padding:6px 0; }
 
   @media (max-width:900px){
-    body{padding-top:100px}
-    .bg-panel { left: 12px; transform: none; top: 12px; width: auto; padding:8px; overflow:hidden;}
-    .bg-grid { gap:6px; }
     :root{--poster-width:360px;--poster-height:640px;--slot-width:150px;--slot-height:320px;--slot-top:90px;--slot-right:20px}
     .headline h1{font-size:36px}
-    .info{width:calc(100% - 60px);left:30px;bottom:25px}
+    .controls{width:calc(100% - 40px)}
   }
 </style>
 </head>
 <body>
-  <div class="bg-panel" id="bgPanel">
-    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">
-      <strong style="font-size:14px;color:#08314e">Backgrounds</strong>
-      <button id="bgToggle" style="padding:6px 8px;border-radius:6px;background:#eee;border:none;cursor:pointer">Reset</button>
-    </div>
-    <div class="bg-grid" id="bgGrid" aria-hidden="false"></div>
-  </div>
+  <div class="poster-wrap">
+    <div class="poster-frame" id="poster">
+      <img id="bgImage" class="bg" src="IMG-20251105-WA0012.jpg" alt="Poster background">
 
-  <div class="poster-frame" id="poster">
-    <img id="bgImage" class="bg" src="IMG-20251105-WA0012.jpg" alt="Poster background">
-    <div class="photo-slot" id="slot">
-      <img id="userImage" alt="Uploaded photo" style="display:none" />
-      <div id="placeholder">Upload photo here</div>
-    </div>
-
-    <!-- round photo slots (left of main slot) -->
-    <div class="round-slot" id="roundSlot1" title="Drag to reposition round image 1">
-      <img id="roundImage1" class="round-img" alt="Round uploaded photo 1" style="display:none" />
-      <img id="roundFrame1" class="frame-overlay" alt="Frame overlay 1" src="20251106_004524.png" style="display:none" />
-    </div>
-
-    <div class="round-slot" id="roundSlot2" title="Drag to reposition round image 2">
-      <img id="roundImage2" class="round-img" alt="Round uploaded photo 2" style="display:none" />
-      <img id="roundFrame2" class="frame-overlay" alt="Frame overlay 2" src="20251106_004524.png" style="display:none" />
-    </div>
-
-    <!-- date below rounds -->
-    <div id="dateBadge" class="date-badge" contenteditable="true" aria-label="Event date">08 June 2026</div>
-
-    <div class="headline" id="headlineBox">
-      <h1 contenteditable="true" id="title">HAPPY</h1>
-      <p contenteditable="true" id="sub">Birthday Christopher</p>
-    </div>
-
-    <div class="info" id="infoBox">
-      <h2 contenteditable="true" id="tag">A blessed day!</h2>
-      <ul id="bullets">
-        <li contenteditable="true">The Lord bless you and keep you</li>
-        <li contenteditable="true">The Lord make His face shine upon you</li>
-        <li contenteditable="true">Numbers 6:24–26</li>
-      </ul>
-    </div>
-
-    <div class="controls">
-      <label for="fileInput" style="cursor:pointer;">Choose Photo</label>
-      <input id="fileInput" type="file" accept="image/*" />
-      <button id="removeBgBtn" disabled>Remove BG</button>
-      <button class="zoom-btn" id="zoomOut">−</button>
-      <button class="zoom-btn" id="zoomIn">+</button>
-
-      <!-- main move buttons -->
-      <div style="display:flex;gap:6px;align-items:center;">
-        <button id="mainUp" class="small">M↑</button>
-        <button id="mainDown" class="small">M↓</button>
-        <button id="mainLeft" class="small">M←</button>
-        <button id="mainRight" class="small">M→</button>
+      <div class="photo-slot" id="slot">
+        <img id="userImage" alt="Uploaded photo" style="display:none" />
+        <div id="placeholder">Upload photo here</div>
       </div>
 
-      <div class="round-controls" style="margin-left:6px;">
-        <button id="addRound1" class="small">Add R1</button>
-        <button id="r1ZoomOut" class="small">r1−</button>
-        <button id="r1ZoomIn" class="small">r1+</button>
-        <button id="r1Up" class="small">↑</button>
-        <button id="r1Down" class="small">↓</button>
-        <button id="r1Left" class="small">←</button>
-        <button id="r1Right" class="small">→</button>
-        <input id="r1Color" type="color" title="R1 background color" value="#ffffff" class="small" style="padding:6px;">
+      <!-- rounds -->
+      <div class="round-slot" id="roundSlot1" title="Drag to reposition round image 1">
+        <img id="roundImage1" class="round-img" alt="Round uploaded photo 1" style="display:none" />
+        <img id="roundFrame1" class="frame-overlay" alt="Frame overlay 1" src="20251106_004524.png" style="display:none" />
+      </div>
+      <div class="round-slot" id="roundSlot2" title="Drag to reposition round image 2">
+        <img id="roundImage2" class="round-img" alt="Round uploaded photo 2" style="display:none" />
+        <img id="roundFrame2" class="frame-overlay" alt="Frame overlay 2" src="20251106_004524.png" style="display:none" />
       </div>
 
-      <div class="round-controls">
-        <button id="addRound2" class="small">Add R2</button>
-        <button id="r2ZoomOut" class="small">r2−</button>
-        <button id="r2ZoomIn" class="small">r2+</button>
-        <button id="r2Up" class="small">↑</button>
-        <button id="r2Down" class="small">↓</button>
-        <button id="r2Left" class="small">←</button>
-        <button id="r2Right" class="small">→</button>
-        <input id="r2Color" type="color" title="R2 background color" value="#ffffff" class="small" style="padding:6px;">
+      <div id="dateBadge" class="date-badge" contenteditable="true" aria-label="Event date">08 June 2026</div>
+
+      <div class="headline" id="headlineBox">
+        <h1 contenteditable="true" id="title">HAPPY</h1>
+        <p contenteditable="true" id="sub">Birthday Christopher</p>
       </div>
 
-      <button id="editVerseBtn" class="small">Edit Verse</button>
+      <div class="info" id="infoBox">
+        <h2 contenteditable="true" id="tag">A blessed day!</h2>
+        <ul id="bullets">
+          <li contenteditable="true">The Lord bless you and keep you</li>
+          <li contenteditable="true">The Lord make His face shine upon you</li>
+          <li contenteditable="true">Numbers 6:24–26</li>
+        </ul>
+      </div>
+    </div>
 
-      <!-- color controls for texts -->
-      <div class="color-controls">
-        <label style="font-size:12px">Title</label>
-        <input id="titleColor" type="color" value="#ffffff">
-        <label style="font-size:12px">Sub</label>
-        <input id="subColor" type="color" value="#ffffff">
-        <label style="font-size:12px">Tag</label>
-        <input id="tagColor" type="color" value="#08314e">
-        <label style="font-size:12px">Bullets</label>
-        <input id="bulletsColor" type="color" value="#08314e">
-        <label style="font-size:12px">Date</label>
-        <input id="dateColor" type="color" value="#08314e">
+    <!-- controls dock under poster -->
+    <div class="controls" id="controls">
+      <div class="controls-left">
+        <label for="fileInput" style="cursor:pointer;">Choose Photo</label>
+        <input id="fileInput" type="file" accept="image/*" />
+        <button id="removeBgBtn" disabled>Remove BG</button>
+
+        <button id="zoomOut" class="zoom-btn">−</button>
+        <button id="zoomIn" class="zoom-btn">+</button>
+
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button id="mainUp" class="small">M↑</button>
+          <button id="mainDown" class="small">M↓</button>
+          <button id="mainLeft" class="small">M←</button>
+          <button id="mainRight" class="small">M→</button>
+        </div>
       </div>
 
-      <button id="downloadBtn">Export</button>
+      <div style="display:flex; gap:12px; align-items:center;">
+        <div style="display:flex; gap:6px;">
+          <button id="addRound1" class="small">Add R1</button>
+          <button id="r1ZoomOut" class="small">r1−</button>
+          <button id="r1ZoomIn" class="small">r1+</button>
+          <button id="r1Up" class="small">↑</button>
+          <button id="r1Down" class="small">↓</button>
+        </div>
+
+        <div style="display:flex; gap:6px;">
+          <button id="addRound2" class="small">Add R2</button>
+          <button id="r2ZoomOut" class="small">r2−</button>
+          <button id="r2ZoomIn" class="small">r2+</button>
+          <button id="r2Up" class="small">↑</button>
+          <button id="r2Down" class="small">↓</button>
+        </div>
+
+        <button id="editVerseBtn" class="small">Edit Verse</button>
+
+        <div class="bg-panel">
+          <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">
+            <strong style="font-size:12px;color:#08314e">Backgrounds</strong>
+            <button id="bgToggle" style="padding:6px 8px;border-radius:6px;background:#eee;border:none;cursor:pointer">Reset</button>
+          </div>
+          <div class="bg-grid" id="bgGrid"></div>
+        </div>
+
+        <div class="color-controls">
+          <label style="font-size:12px">Title</label><input id="titleColor" type="color" value="#ffffff">
+          <label style="font-size:12px">Sub</label><input id="subColor" type="color" value="#ffffff">
+          <label style="font-size:12px">Tag</label><input id="tagColor" type="color" value="#08314e">
+        </div>
+
+        <button id="downloadBtn" class="small">Export</button>
+      </div>
     </div>
   </div>
 
-<!-- BodyPix (kept) -->
+<!-- BodyPix -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.0.5/dist/body-pix.js"></script>
 
@@ -254,7 +223,7 @@ const r1Up = document.getElementById('r1Up');
 const r1Down = document.getElementById('r1Down');
 const r1Left = document.getElementById('r1Left');
 const r1Right = document.getElementById('r1Right');
-const r1Color = document.getElementById('r1Color');
+const r1Color = document.getElementById('r1Color') || (()=>{})();
 
 const roundSlot2 = document.getElementById('roundSlot2');
 const roundImage2 = document.getElementById('roundImage2');
@@ -266,12 +235,13 @@ const r2Up = document.getElementById('r2Up');
 const r2Down = document.getElementById('r2Down');
 const r2Left = document.getElementById('r2Left');
 const r2Right = document.getElementById('r2Right');
-const r2Color = document.getElementById('r2Color');
+const r2Color = document.getElementById('r2Color') || (()=>{})();
 
 const dateBadge = document.getElementById('dateBadge');
 const editVerseBtn = document.getElementById('editVerseBtn');
 const bgGrid = document.getElementById('bgGrid');
 const bgToggle = document.getElementById('bgToggle');
+const removeBgBtn = document.getElementById('removeBgBtn');
 
 const mainUp = document.getElementById('mainUp');
 const mainDown = document.getElementById('mainDown');
@@ -281,8 +251,8 @@ const mainRight = document.getElementById('mainRight');
 const titleColor = document.getElementById('titleColor');
 const subColor = document.getElementById('subColor');
 const tagColor = document.getElementById('tagColor');
-const bulletsColor = document.getElementById('bulletsColor');
-const dateColor = document.getElementById('dateColor');
+
+const downloadBtn = document.getElementById('downloadBtn');
 
 let scale = 1, translateX = 0, translateY = 0;
 let dragging = false, startX = 0, startY = 0;
@@ -290,7 +260,7 @@ let dragging = false, startX = 0, startY = 0;
 let r1Enabled = false, r1Scale = 1, r1Tx = 0, r1Ty = 0, r1Dragging = false, r1StartX = 0, r1StartY = 0;
 let r2Enabled = false, r2Scale = 1, r2Tx = 0, r2Ty = 0, r2Dragging = false, r2StartX = 0, r2StartY = 0;
 
-/* ---------- backgrounds ---------- */
+/* ---------- backgrounds (thumbs) ---------- */
 const bgFiles = [];
 for (let i=1;i<=10;i++){ bgFiles.push('bg'+i+'.jpg'); }
 bgFiles.forEach((f, idx) => {
@@ -337,38 +307,34 @@ function updateTransform(){ userImage.style.transform = `translate(${translateX}
 document.getElementById('zoomIn').addEventListener('click', ()=>{ scale = Math.min(3.5, scale + 0.1); updateTransform(); });
 document.getElementById('zoomOut').addEventListener('click', ()=>{ scale = Math.max(0.5, scale - 0.1); updateTransform(); });
 
-// main nudge buttons (small increments)
+// main nudge buttons
 mainUp && mainUp.addEventListener('click', ()=>{ translateY -= 8; updateTransform(); });
 mainDown && mainDown.addEventListener('click', ()=>{ translateY += 8; updateTransform(); });
 mainLeft && mainLeft.addEventListener('click', ()=>{ translateX -= 8; updateTransform(); });
 mainRight && mainRight.addEventListener('click', ()=>{ translateX += 8; updateTransform(); });
 
-/* ---------- arrange round slots to the LEFT (increased spacing) ---------- */
+/* ---------- arrange round slots to the LEFT ---------- */
 function arrangeRoundSlots() {
   const slotRect = slot.getBoundingClientRect();
   const posterRect = poster.getBoundingClientRect();
   const rW = roundSlot1.offsetWidth || 140;
   const rH = roundSlot1.offsetHeight || 140;
 
-  // compute left edge for circles: left of main slot with gap
-  const gap = 16; // increased gap
+  const gap = 16;
   const leftOfSlot = slotRect.left - posterRect.left - rW - gap;
   const safeLeft = Math.max(8, leftOfSlot);
 
-  // R1: slightly above center-left
   const r1Top = slotRect.top - posterRect.top + 12;
   roundSlot1.style.left = safeLeft + 'px';
   roundSlot1.style.top = r1Top + 'px';
   roundSlot1.style.zIndex = 56;
 
-  // R2: placed lower and a bit right with more spacing so they don't overlap too much
-  const r2Top = r1Top + Math.round(rH * 0.62); // increased vertical offset (was 0.42)
-  const r2Left = safeLeft + Math.round(rW * 0.28); // increased horizontal offset (was 0.16)
+  const r2Top = r1Top + Math.round(rH * 0.62);
+  const r2Left = safeLeft + Math.round(rW * 0.28);
   roundSlot2.style.left = r2Left + 'px';
   roundSlot2.style.top = r2Top + 'px';
   roundSlot2.style.zIndex = 54;
 
-  // position dateBadge under roundSlot2 (centered under both)
   const leftCenter = Math.round((parseInt(roundSlot1.style.left || 0) + parseInt(roundSlot2.style.left || 0)) / 2);
   const below = r2Top + rH + 6;
   dateBadge.style.left = (leftCenter) + 'px';
@@ -376,7 +342,6 @@ function arrangeRoundSlots() {
   dateBadge.style.display = (r1Enabled || r2Enabled) ? 'block' : 'none';
   dateBadge.style.zIndex = 53;
 
-  // clamp inside poster
   const ensureInside = (el) => {
     const r = el.getBoundingClientRect();
     const left = r.left - posterRect.left;
@@ -399,7 +364,7 @@ addRound1.addEventListener('click', ()=>{
     roundFrame1.style.display='block';
     roundSlot1.style.display='flex';
     if(!roundImage1.src && userImage.src){ roundImage1.src = userImage.src; roundImage1.style.display='block'; r1Scale=1; r1Tx=r1Ty=0; updateRound1(); }
-    roundSlot1.style.background = r1Color.value;
+    try{ roundSlot1.style.background = r1Color.value; }catch(e){}
   } else {
     roundSlot1.classList.remove('active'); addRound1.innerText='Add R1';
     roundImage1.style.display='none'; roundFrame1.style.display='none'; roundSlot1.style.display='none';
@@ -410,9 +375,8 @@ r1ZoomIn.addEventListener('click', ()=>{ r1Scale = Math.min(5, r1Scale + 0.08); 
 r1ZoomOut.addEventListener('click', ()=>{ r1Scale = Math.max(0.3, r1Scale - 0.08); updateRound1(); });
 r1Up.addEventListener('click', ()=>{ r1Ty -= 6; updateRound1(); });
 r1Down.addEventListener('click', ()=>{ r1Ty += 6; updateRound1(); });
-r1Left.addEventListener('click', ()=>{ r1Tx -= 6; updateRound1(); });
-r1Right.addEventListener('click', ()=>{ r1Tx += 6; updateRound1(); });
-r1Color.addEventListener('input', ()=>{ roundSlot1.style.background = r1Color.value; });
+r1Left && r1Left.addEventListener('click', ()=>{ r1Tx -= 6; updateRound1(); });
+r1Right && r1Right.addEventListener('click', ()=>{ r1Tx += 6; updateRound1(); });
 
 roundSlot1.addEventListener('pointerdown', e=>{
   if (roundImage1.style.display === 'none') return;
@@ -421,10 +385,10 @@ roundSlot1.addEventListener('pointerdown', e=>{
   roundSlot1.style.cursor = 'grabbing';
 });
 window.addEventListener('pointermove', e=>{
-  if(r1Dragging){ r1Tx += e.clientX - r1StartX; r1Ty += e.clientY - r1StartY; r1StartX = e.clientX; r1StartY = e.clientY; updateRound1(); }
+  if(r1Dragging){ r1Tx += e.clientX - r1StartX; r1Ty += e.clientY - r1StartY; r1StartX = e.clientX; r1StartY = e.clientY; updateRound1(); arrangeRoundSlots(); }
 });
 window.addEventListener('pointerup', ()=>{ r1Dragging=false; roundSlot1.style.cursor='grab'; });
-function updateRound1(){ roundImage1.style.transform = `translate(${r1Tx}px, ${r1Ty}px) scale(${r1Scale})`; roundSlot1.style.background = r1Color.value; }
+function updateRound1(){ roundImage1.style.transform = `translate(${r1Tx}px, ${r1Ty}px) scale(${r1Scale})`; try{ roundSlot1.style.background = r1Color.value; }catch(e){} }
 
 /* ---------- Round2 ---------- */
 addRound2.addEventListener('click', ()=>{
@@ -434,7 +398,7 @@ addRound2.addEventListener('click', ()=>{
     roundFrame2.style.display='block';
     roundSlot2.style.display='flex';
     if(!roundImage2.src && userImage.src){ roundImage2.src = userImage.src; roundImage2.style.display='block'; r2Scale=1; r2Tx=r2Ty=0; updateRound2(); }
-    roundSlot2.style.background = r2Color.value;
+    try{ roundSlot2.style.background = r2Color.value; }catch(e){}
   } else {
     roundSlot2.classList.remove('active'); addRound2.innerText='Add R2';
     roundImage2.style.display='none'; roundFrame2.style.display='none'; roundSlot2.style.display='none';
@@ -445,9 +409,8 @@ r2ZoomIn.addEventListener('click', ()=>{ r2Scale = Math.min(5, r2Scale + 0.08); 
 r2ZoomOut.addEventListener('click', ()=>{ r2Scale = Math.max(0.3, r2Scale - 0.08); updateRound2(); });
 r2Up.addEventListener('click', ()=>{ r2Ty -= 6; updateRound2(); });
 r2Down.addEventListener('click', ()=>{ r2Ty += 6; updateRound2(); });
-r2Left.addEventListener('click', ()=>{ r2Tx -= 6; updateRound2(); });
-r2Right.addEventListener('click', ()=>{ r2Tx += 6; updateRound2(); });
-r2Color.addEventListener('input', ()=>{ roundSlot2.style.background = r2Color.value; });
+r2Left && r2Left.addEventListener('click', ()=>{ r2Tx -= 6; updateRound2(); });
+r2Right && r2Right.addEventListener('click', ()=>{ r2Tx += 6; updateRound2(); });
 
 roundSlot2.addEventListener('pointerdown', e=>{
   if (roundImage2.style.display === 'none') return;
@@ -456,24 +419,24 @@ roundSlot2.addEventListener('pointerdown', e=>{
   roundSlot2.style.cursor = 'grabbing';
 });
 window.addEventListener('pointermove', e=>{
-  if(r2Dragging){ r2Tx += e.clientX - r2StartX; r2Ty += e.clientY - r2StartY; r2StartX = e.clientX; r2StartY = e.clientY; updateRound2(); }
+  if(r2Dragging){ r2Tx += e.clientX - r2StartX; r2Ty += e.clientY - r2StartY; r2StartX = e.clientX; r2StartY = e.clientY; updateRound2(); arrangeRoundSlots(); }
 });
 window.addEventListener('pointerup', ()=>{ r2Dragging=false; roundSlot2.style.cursor='grab'; });
-function updateRound2(){ roundImage2.style.transform = `translate(${r2Tx}px, ${r2Ty}px) scale(${r2Scale})`; roundSlot2.style.background = r2Color.value; }
+function updateRound2(){ roundImage2.style.transform = `translate(${r2Tx}px, ${r2Ty}px) scale(${r2Scale})`; try{ roundSlot2.style.background = r2Color.value; }catch(e){} }
 
-/* drag & drop upload to round slots */
+/* drag & drop to rounds */
 roundSlot1.addEventListener('drop', e=>{
   e.preventDefault();
   const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
   if(!f) return;
-  const r = new FileReader(); r.onload = ev=>{ roundImage1.src=ev.target.result; roundImage1.style.display='block'; roundFrame1.style.display='block'; r1Scale=1; r1Tx=r1Ty=0; updateRound1(); }; r.readAsDataURL(f);
+  const r = new FileReader(); r.onload = ev=>{ roundImage1.src=ev.target.result; roundImage1.style.display='block'; roundFrame1.style.display='block'; r1Scale=1; r1Tx=r1Ty=0; updateRound1(); arrangeRoundSlots(); }; r.readAsDataURL(f);
 });
 roundSlot1.addEventListener('dragover', e=>e.preventDefault());
 roundSlot2.addEventListener('drop', e=>{
   e.preventDefault();
   const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
   if(!f) return;
-  const r = new FileReader(); r.onload = ev=>{ roundImage2.src=ev.target.result; roundImage2.style.display='block'; roundFrame2.style.display='block'; r2Scale=1; r2Tx=r2Ty=0; updateRound2(); }; r.readAsDataURL(f);
+  const r = new FileReader(); r.onload = ev=>{ roundImage2.src=ev.target.result; roundImage2.style.display='block'; roundFrame2.style.display='block'; r2Scale=1; r2Tx=r2Ty=0; updateRound2(); arrangeRoundSlots(); }; r.readAsDataURL(f);
 });
 roundSlot2.addEventListener('dragover', e=>e.preventDefault());
 
@@ -483,12 +446,12 @@ titleEl.addEventListener('input', fitTitleToOneLine);
 window.addEventListener('resize', ()=>{ fitTitleToOneLine(); arrangeRoundSlots(); });
 document.addEventListener('DOMContentLoaded', ()=>{ fitTitleToOneLine(); arrangeRoundSlots(); });
 
-/* ---------- Verse editor (sync with .info) ---------- */
+/* ---------- Verse editor (simple modal) ---------- */
 const verseEditorHTML = `
-<div class="verse-editor" id="verseEditor" aria-hidden="true">
+<div class="verse-editor" id="verseEditor" aria-hidden="true" style="position:fixed; right:12px; bottom:88px; z-index:999;">
   <h3>Edit verse / description</h3>
-  <div contenteditable="true" id="verseEditorTag" style="font-weight:700;"></div>
-  <div contenteditable="true" id="verseEditorBullets" style="margin-top:8px;"></div>
+  <div contenteditable="true" id="verseEditorTag" style="font-weight:700;padding:6px;border:1px solid #ddd;background:#fff;"></div>
+  <div contenteditable="true" id="verseEditorBullets" style="margin-top:8px;padding:6px;border:1px solid #ddd;background:#fff;"></div>
   <div style="display:flex; gap:6px; margin-top:8px; justify-content:flex-end">
     <button id="verseSave" style="background:#0a58ca;color:#fff;border:none;padding:6px 10px;border-radius:6px">Save</button>
     <button id="verseClose" style="background:#ccc;color:#000;border:none;padding:6px 10px;border-radius:6px">Close</button>
@@ -513,7 +476,6 @@ function openVerseEditor(){
   verseEditor.setAttribute('aria-hidden','false');
 }
 function closeVerseEditor(){ verseEditor.style.display = 'none'; verseEditor.setAttribute('aria-hidden','true'); }
-
 editVerseBtn.addEventListener('click', openVerseEditor);
 verseClose.addEventListener('click', closeVerseEditor);
 verseSave.addEventListener('click', ()=>{
@@ -531,30 +493,215 @@ verseSave.addEventListener('click', ()=>{
   closeVerseEditor();
 });
 
-/* ---------- BodyPix (kept) ---------- */
+/* ---------- BodyPix background removal ---------- */
 let bodyPixNet = null, bgRemoving = false;
-async function enableRemoveButtonWhenReady(){ const btn = document.getElementById('removeBgBtn'); if (btn){ btn.disabled = false; btn.innerText = 'Remove BG'; } else setTimeout(enableRemoveButtonWhenReady,300); }
+async function enableRemoveButtonWhenReady(){ const btn = removeBgBtn; if (btn){ btn.disabled = false; btn.innerText = 'Remove BG'; } else setTimeout(enableRemoveButtonWhenReady,300); }
 async function setupBgRemoval(){ try{ bodyPixNet = await bodyPix.load({architecture:'MobileNetV1', outputStride:16, multiplier:0.75, quantBytes:2}); enableRemoveButtonWhenReady(); } catch(e){ console.error(e); alert('BG model failed to load'); } }
-async function removeBackgroundFromUserImage(){ if (!bodyPixNet){ alert('Model still loading'); return; } if (bgRemoving) return; const ui = userImage; if (!ui || !ui.src){ alert('Upload a photo first'); return; } bgRemoving = true; const btn = document.getElementById('removeBgBtn'); if(btn){ btn.innerText='Removing…'; btn.disabled=true; } try { const img = new Image(); img.crossOrigin='anonymous'; img.src = ui.src; await new Promise((r,rej)=>{ img.onload=r; img.onerror=rej; }); const seg = await bodyPixNet.segmentPerson(img, {flipHorizontal:false, internalResolution:'medium', segmentationThreshold:0.7}); const w = img.naturalWidth, h = img.naturalHeight; const out = document.createElement('canvas'); out.width=w; out.height=h; const ctx = out.getContext('2d'); ctx.drawImage(img,0,0,w,h); const imageData = ctx.getImageData(0,0,w,h); const pix = imageData.data; const s = seg.data; for (let i=0, p=0; i<s.length; i++, p+=4) { if (s[i]===1) pix[p+3]=255; else pix[p+3]=0; } ctx.putImageData(imageData, 0, 0); ui.src = out.toDataURL('image/png'); ui.style.display='block'; placeholder.style.display='none'; } catch(err){ console.error(err); alert('BG removal failed'); } finally { bgRemoving=false; if(btn){ btn.disabled=false; btn.innerText='Remove BG'; } } }
-document.addEventListener('DOMContentLoaded', ()=>{ const btn=document.getElementById('removeBgBtn'); if(btn) btn.addEventListener('click', removeBackgroundFromUserImage); setupBgRemoval(); });
+async function removeBackgroundFromUserImage(){ if (!bodyPixNet){ alert('Model still loading'); return; } if (bgRemoving) return; const ui = userImage; if (!ui || !ui.src){ alert('Upload a photo first'); return; } bgRemoving = true; const btn = removeBgBtn; if(btn){ btn.innerText='Removing…'; btn.disabled=true; } try { const img = new Image(); img.crossOrigin='anonymous'; img.src = ui.src; await new Promise((r,rej)=>{ img.onload=r; img.onerror=rej; }); const seg = await bodyPixNet.segmentPerson(img, {flipHorizontal:false, internalResolution:'medium', segmentationThreshold:0.7}); const w = img.naturalWidth, h = img.naturalHeight; const out = document.createElement('canvas'); out.width=w; out.height=h; const ctx = out.getContext('2d'); ctx.drawImage(img,0,0,w,h); const imageData = ctx.getImageData(0,0,w,h); const pix = imageData.data; const s = seg.data; for (let i=0, p=0; i<s.length; i++, p+=4) { if (s[i]===1) pix[p+3]=255; else pix[p+3]=0; } ctx.putImageData(imageData, 0, 0); ui.src = out.toDataURL('image/png'); ui.style.display='block'; placeholder.style.display='none'; } catch(err){ console.error(err); alert('BG removal failed'); } finally { bgRemoving=false; if(btn){ btn.disabled=false; btn.innerText='Remove BG'; } } }
+document.addEventListener('DOMContentLoaded', ()=>{ if(removeBgBtn) removeBgBtn.addEventListener('click', removeBackgroundFromUserImage); setupBgRemoval(); });
 
-/* ---------- color controls for texts ---------- */
-titleColor.addEventListener('input', ()=>{ document.querySelector('#title').style.color = titleColor.value; });
-subColor.addEventListener('input', ()=>{ document.querySelector('#sub').style.color = subColor.value; });
-tagColor.addEventListener('input', ()=>{ document.querySelector('#tag').style.color = tagColor.value; });
-bulletsColor.addEventListener('input', ()=>{ document.querySelectorAll('#bullets li').forEach(li => li.style.color = bulletsColor.value); });
-dateColor.addEventListener('input', ()=>{ dateBadge.style.color = dateColor.value; });
-
-/* update bullets color when edited */
-document.getElementById('bullets').addEventListener('input', ()=>{ document.querySelectorAll('#bullets li').forEach(li => li.style.color = bulletsColor.value); });
+/* ---------- text color controls ---------- */
+titleColor && titleColor.addEventListener('input', ()=>{ document.querySelector('#title').style.color = titleColor.value; });
+subColor && subColor.addEventListener('input', ()=>{ document.querySelector('#sub').style.color = subColor.value; });
+tagColor && tagColor.addEventListener('input', ()=>{ document.querySelector('#tag').style.color = tagColor.value; });
 
 /* ---------- layout on load/resize ---------- */
 window.addEventListener('resize', arrangeRoundSlots);
-document.addEventListener('DOMContentLoaded', ()=>{ arrangeRoundSlots(); /* apply initial colors from inputs */ titleColor.dispatchEvent(new Event('input')); subColor.dispatchEvent(new Event('input')); tagColor.dispatchEvent(new Event('input')); bulletsColor.dispatchEvent(new Event('input')); dateColor.dispatchEvent(new Event('input')); });
+document.addEventListener('DOMContentLoaded', ()=>{ arrangeRoundSlots(); titleColor && titleColor.dispatchEvent(new Event('input')); subColor && subColor.dispatchEvent(new Event('input')); tagColor && tagColor.dispatchEvent(new Event('input')); });
 
-/* ---------- Export placeholder ---------- */
-/* If you want full export/drawRoundExport integrated with the new frame (20251106_004524.png), say "yes export" and I'll paste the final export block. */
+/* ---------- Export implementation ---------- */
+/* helper load image */
+function loadImage(src){ return new Promise((res,rej)=>{ const i=new Image(); i.crossOrigin='anonymous'; i.onload=()=>res(i); i.onerror=rej; i.src=src; }); }
+function roundedRectPath(ctx,x,y,w,h,r){ const min=Math.min(w,h)/2; if(r>min) r=min; ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function wrapText(ctx,text,x,y,maxWidth,lineH){ const words=text.split(' '); let line=''; for(let n=0;n<words.length;n++){ const test=line+words[n]+' '; const m=ctx.measureText(test); if(m.width>maxWidth && n>0){ ctx.fillText(line.trim(), x, y); line=words[n]+' '; y+=lineH; } else line=test; } if(line) ctx.fillText(line.trim(), x, y); return y; }
+
+async function drawRoundExport(ctx, rx, ry, rw, rh, roundImageEl, frameSrc, tx, ty, scaleFactor, bgColor) {
+  if (!roundImageEl || !roundImageEl.src) return;
+  const size = Math.min(rw, rh);
+  const cx = rx + Math.round((rw - size)/2) + size/2;
+  const cy = ry + Math.round((rh - size)/2) + size/2;
+  const radius = size/2;
+
+  // draw background circle with shadow
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.22)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 8;
+  ctx.fillStyle = bgColor || '#ffffff';
+  ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI*2); ctx.closePath(); ctx.fill();
+  ctx.restore();
+
+  // image
+  const img = await loadImage(roundImageEl.src);
+  const imgRatio = img.width / img.height;
+  const slotRatio = 1;
+  let baseW, baseH, baseX, baseY;
+  if (imgRatio > slotRatio){ baseH = size; baseW = img.width * (size / img.height); baseX = cx - size/2 - (baseW - size)/2; baseY = cy - size/2; }
+  else { baseW = size; baseH = img.height * (size / img.width); baseX = cx - size/2; baseY = cy - size/2 - (baseH - size)/2; }
+
+  // convert CSS pixel transforms (tx/ty) from display coords to canvas coords:
+  const slotRect = roundImageEl.closest('.round-slot').getBoundingClientRect();
+  const posterRect = poster.getBoundingClientRect();
+  const displaySw = slotRect.width;
+  const displaySh = slotRect.height;
+  const scaleX = size / displaySw;
+  const scaleY = size / displaySh;
+  const finalW = baseW * scaleFactor;
+  const finalH = baseH * scaleFactor;
+  const finalX = baseX + tx * scaleX + (size - baseW)/2;
+  const finalY = baseY + ty * scaleY;
+
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI*2); ctx.closePath(); ctx.clip();
+  ctx.drawImage(img, finalX, finalY, finalW, finalH);
+  // subtle bottom fade inside circle
+  const grad = ctx.createLinearGradient(0, cy, 0, cy + radius);
+  grad.addColorStop(0, 'rgba(255,255,255,0)');
+  grad.addColorStop(1, 'rgba(255,255,255,0.5)');
+  ctx.fillStyle = grad; ctx.fillRect(cx - radius, cy, size, radius);
+  ctx.restore();
+
+  // overlay frame PNG if available
+  try {
+    const frameImg = await loadImage(frameSrc);
+    const pad = Math.round(size * 0.02);
+    ctx.drawImage(frameImg, cx - radius - pad, cy - radius - pad, size + pad*2, size + pad*2);
+  } catch(e) {
+    ctx.save();
+    ctx.lineWidth = Math.max(6, Math.round(size * 0.04));
+    ctx.strokeStyle = 'rgba(255,215,0,0.95)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius - ctx.lineWidth/2, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+downloadBtn.addEventListener('click', async ()=>{
+  try {
+    fitTitleToOneLine();
+    const posterEl = poster;
+    const w = posterEl.clientWidth, h = posterEl.clientHeight;
+    const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+
+    // draw background
+    const bgEl = document.getElementById('bgImage');
+    if (bgEl && bgEl.src) { const bg = await loadImage(bgEl.src); ctx.drawImage(bg,0,0,w,h); } else { ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); }
+
+    // compute slot geometry on canvas
+    const slotRect = slot.getBoundingClientRect();
+    const posterRect = poster.getBoundingClientRect();
+    const sx = Math.round(slotRect.left - posterRect.left);
+    const sy = Math.round(slotRect.top - posterRect.top);
+    const sw = Math.round(slotRect.width);
+    const sh = Math.round(slotRect.height);
+    const cornerRadius = 18;
+
+    // photo card background + shadow
+    ctx.save(); ctx.shadowColor='rgba(0,0,0,0.28)'; ctx.shadowBlur=20; ctx.shadowOffsetY=8;
+    ctx.fillStyle='rgba(255,255,255,0.96)'; roundedRectPath(ctx, sx, sy, sw, sh, cornerRadius); ctx.fill(); ctx.restore();
+
+    // main image clipped & faded
+    if (userImage && userImage.src) {
+      const img = await loadImage(userImage.src);
+      const imgRatio = img.width / img.height;
+      const slotRatio = sw / sh;
+      let baseW, baseH, baseX, baseY;
+      if (imgRatio > slotRatio){ baseH=sh; baseW=img.width*(sh/img.height); baseX=sx-(baseW-sw)/2; baseY=sy; }
+      else { baseW=sw; baseH=img.height*(sw/img.width); baseX=sx; baseY=sy-(baseH-sh)/2; }
+      // parse CSS transform of userImage (translate+scale)
+      let tx=0, ty=0, s=1;
+      const t = userImage.style.transform || '';
+      const m = t.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)\s*scale\(([\d.]+)\)/);
+      if(m){ tx=parseFloat(m[1]); ty=parseFloat(m[2]); s=parseFloat(m[3]); }
+      else { const sM = t.match(/scale\(([\d.]+)\)/); const xM = t.match(/translateX\(([-\d.]+)px\)/); const yM = t.match(/translateY\(([-\d.]+)px\)/); if(sM) s=parseFloat(sM[1]); if(xM) tx=parseFloat(xM[1]); if(yM) ty=parseFloat(yM[1]); }
+      const finalW = baseW * s, finalH = baseH * s;
+      const finalX = baseX + tx + (sw - baseW)/2, finalY = baseY + ty;
+      ctx.save(); roundedRectPath(ctx, sx, sy, sw, sh, cornerRadius); ctx.clip();
+      ctx.drawImage(img, finalX, finalY, finalW, finalH);
+      // bottom fade
+      const grad = ctx.createLinearGradient(0, sy + sh*0.6, 0, sy + sh);
+      grad.addColorStop(0, 'rgba(255,255,255,0)'); grad.addColorStop(1, 'rgba(255,255,255,1)');
+      ctx.fillStyle = grad; ctx.fillRect(sx, sy + sh*0.6, sw, sh*0.4);
+      ctx.restore();
+      // ellipse under card
+      ctx.save(); ctx.globalCompositeOperation='destination-over'; ctx.fillStyle='rgba(0,0,0,0.06)';
+      const eW = sw*0.9, eH = 22, eX = sx + (sw-eW)/2, eY = sy + sh - 10;
+      ctx.beginPath(); ctx.ellipse(eX+eW/2, eY+eH/2, eW/2, eH/2, 0,0,Math.PI*2); ctx.fill(); ctx.restore();
+    }
+
+    // draw roundSlot1 if active
+    if(r1Enabled && roundSlot1.classList.contains('active')){
+      const r1Rect = roundSlot1.getBoundingClientRect();
+      const rx = Math.round(r1Rect.left - posterRect.left);
+      const ry = Math.round(r1Rect.top - posterRect.top);
+      const rw = Math.round(r1Rect.width);
+      const rh = Math.round(r1Rect.height);
+      const bgColor1 = (r1Color && r1Color.value) || '#ffffff';
+      await drawRoundExport(ctx, rx, ry, rw, rh, roundImage1, '20251106_004524.png', r1Tx, r1Ty, r1Scale, bgColor1);
+    }
+    // draw roundSlot2 if active
+    if(r2Enabled && roundSlot2.classList.contains('active')){
+      const r2Rect = roundSlot2.getBoundingClientRect();
+      const rx2 = Math.round(r2Rect.left - posterRect.left);
+      const ry2 = Math.round(r2Rect.top - posterRect.top);
+      const rw2 = Math.round(r2Rect.width);
+      const rh2 = Math.round(r2Rect.height);
+      const bgColor2 = (r2Color && r2Color.value) || '#ffffff';
+      await drawRoundExport(ctx, rx2, ry2, rw2, rh2, roundImage2, '20251106_004524.png', r2Tx, r2Ty, r2Scale, bgColor2);
+    }
+
+    // info card translucent
+    const infoEl = document.querySelector('.info'); const infoRect = infoEl.getBoundingClientRect();
+    const infoX = Math.round(infoRect.left - posterRect.left), infoY = Math.round(infoRect.top - posterRect.top);
+    const infoW = Math.round(infoRect.width), infoH = Math.round(infoRect.height);
+    ctx.save(); ctx.shadowColor='rgba(0,0,0,0.12)'; ctx.shadowBlur=20; ctx.shadowOffsetY=8;
+    ctx.fillStyle='rgba(255,255,255,0.5)'; roundedRectPath(ctx, infoX, infoY, infoW, infoH, 10); ctx.fill(); ctx.restore();
+
+    // translucent title box area (visual)
+    const leftMargin = 40;
+    const titleMaxWidth = Math.max(100, (slot.getBoundingClientRect().left - poster.getBoundingClientRect().left) - leftMargin - 24);
+    const titleBoxX = leftMargin - 12, titleBoxY = 22, titleBoxW = titleMaxWidth + 24, titleBoxH = 110;
+    ctx.save(); ctx.fillStyle='rgba(255,255,255,0.06)'; roundedRectPath(ctx, titleBoxX, titleBoxY, titleBoxW, titleBoxH, 12); ctx.fill(); ctx.restore();
+
+    // draw title
+    const titleText = titleEl.innerText.trim();
+    ctx.save(); ctx.fillStyle=(titleColor?titleColor.value:'#fff'); 
+    const computedFontSize = parseFloat(getComputedStyle(titleEl).fontSize) || 64;
+    ctx.font = `bold ${Math.round(computedFontSize)}px system-ui`;
+    ctx.shadowColor='rgba(0,0,0,0.45)'; ctx.shadowBlur=12; ctx.shadowOffsetY=4;
+    wrapText(ctx, titleText, leftMargin, 90, titleMaxWidth, Math.max(72, computedFontSize + 10));
+    ctx.restore();
+
+    // subtitle
+    const subtitle = document.getElementById('sub').innerText.trim();
+    ctx.save(); ctx.fillStyle=(subColor?subColor.value:'rgba(255,255,255,0.95)'); ctx.font='20px system-ui'; ctx.fillText(subtitle, leftMargin, 130, titleMaxWidth); ctx.restore();
+
+    // info text
+    ctx.save(); ctx.fillStyle=(tagColor?tagColor.value:'#08314e'); ctx.font='bold 20px system-ui'; ctx.fillText(document.getElementById('tag').innerText.trim(), infoX+20, infoY+34);
+    ctx.font='18px system-ui'; let yy = infoY + 34 + 28;
+    const bullets = Array.from(document.querySelectorAll('#bullets li')).map(li=>li.innerText.trim());
+    for(const b of bullets){ ctx.fillStyle=(tagColor?tagColor.value:'#08314e'); ctx.fillText('• ' + b, infoX+20, yy, infoW-40); yy += 26; }
+    ctx.restore();
+
+    // date badge
+    if(dateBadge && dateBadge.innerText.trim()){
+      const dbRect = dateBadge.getBoundingClientRect();
+      const dx = Math.round(dbRect.left - posterRect.left);
+      const dy = Math.round(dbRect.top - posterRect.top);
+      ctx.save(); ctx.font='16px "Rogbold-3IIGM", system-ui'; ctx.fillStyle=(dateColor?dateColor.value:'#08314e'); ctx.fillText(dateBadge.innerText.trim(), dx, dy + 14); ctx.restore();
+    }
+
+    // download
+    const link = document.createElement('a'); link.download = 'poster_export.png'; link.href = canvas.toDataURL('image/png'); link.click();
+  } catch(err){ console.error(err); alert('Export failed: ' + (err.message || err)); }
+});
+
+/* ---------- simple UI glue ---------- */
+document.getElementById('r1ZoomIn')?.addEventListener('click', ()=>{ r1Scale = Math.min(5, r1Scale + 0.08); updateRound1(); });
+document.getElementById('r1ZoomOut')?.addEventListener('click', ()=>{ r1Scale = Math.max(0.3, r1Scale - 0.08); updateRound1(); });
+document.getElementById('r2ZoomIn')?.addEventListener('click', ()=>{ r2Scale = Math.min(5, r2Scale + 0.08); updateRound2(); });
+document.getElementById('r2ZoomOut')?.addEventListener('click', ()=>{ r2Scale = Math.max(0.3, r2Scale - 0.08); updateRound2(); });
 
 </script>
 </body>
-</html>
+  </html>
